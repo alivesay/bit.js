@@ -1,6 +1,5 @@
 'use strict';
 
-
 var noop = function () {};
 
 (function () {
@@ -130,13 +129,16 @@ var bit = {
     },
 
     run: function () {
+        var self = this;
+
         if (this._running) {
             throw new Error('bit.run: Already running');
         }
 
         this._running = true;
-        this._requestAnimationFrameID = this.$window.requestAnimationFrame(this._render.bind(this));
-        this._tick();
+
+        this._requestAnimationFrameID = this.$window.requestAnimationFrame(function () { self._render(self); });
+        this._timeoutID = setTimeout(function () { self._tick(self); }, self.SECONDS_PER_FRAME);
     },
 
     stop: function () {
@@ -149,22 +151,22 @@ var bit = {
         this._running = false;
     },
 
-    _tick: function () {
-        this._app.tick();
-        this._lastTick = Date.now();
-        this._timeoutID = setTimeout(this._tick.bind(this), this.SECONDS_PER_FRAME);
+    _tick: function (self) {
+        self._app.tick();
+        self._lastTick = Date.now();
+        self._timeoutID = setTimeout(function () { self._tick(self); }, self.SECONDS_PER_FRAME);
     },
 
     fps: function () { return this._fpsCounter.fps; },
 
-    _render: function () {
-        this._app.render();
-        this._swapBuffer();
+    _render: function (self) {
+        self._app.render();
+        self._swapBuffer();
 
-        this._fpsCounter.calc();
+        self._fpsCounter.calc();
 
-        if (this._running) {
-            this._requestAnimationFrameID = this.$window.requestAnimationFrame(this._render.bind(this));
+        if (self._running) {
+            self._requestAnimationFrameID = self.$window.requestAnimationFrame(function () { self._render(self); });
         }
     },
 
