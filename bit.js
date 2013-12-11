@@ -1,6 +1,6 @@
 'use strict';
 
-var noop = function () {};
+var bit_noop = function () {};
 
 (function () {
     if (!window.requestAnimationFrame) {
@@ -20,20 +20,10 @@ var noop = function () {};
                 window.mozCancelRequestAnimationFrame || window.mozCancelAnimationFrame ||
                 window.oCancelRequestAnimationFrame || window.oCancelAnimationFrame ||
                 window.msCancelRequestAnimationFrame || window.msCancelAnimationFrame ||
-                noop;
+                bit_noop;
         }());
     }
 }());
-
-
-var BitApp = function () {};
-
-BitApp.prototype.init = noop;
-BitApp.prototype.tick = noop;
-BitApp.prototype.render = noop;
-BitApp.prototype.postProcess = noop;
-BitApp.prototype.overlay = noop;
-BitApp.prototype.pixelShader = noop;
 
 
 var bit = {
@@ -128,7 +118,7 @@ var bit = {
         this._running = false;
     },
 
-    run: function () {
+    start: function () {
         var self = this;
 
         if (this._running) {
@@ -157,8 +147,6 @@ var bit = {
         self._timeoutID = setTimeout(function () { self._tick(self); }, self.SECONDS_PER_FRAME);
     },
 
-    fps: function () { return this._fpsCounter.fps; },
-
     _render: function (self) {
         self._app.render();
         self._swapBuffer();
@@ -185,6 +173,8 @@ var bit = {
         this._app.overlay();
     },
 
+    fps: function () { return this._fpsCounter.fps; },
+
     putPixel: function (x, y, r, g, b, a) {
         if (x < 0 || x >= this.width || y < 0 || y >= this.height) { return; }
 
@@ -197,8 +187,7 @@ var bit = {
     },
 
     blit: function (sprite, x, y) {
-        var $data = sprite.imgData.data,
-            offset, i, j;
+        var $data = sprite.imgData.data, offset, i, j;
 
         for (i = 0; i < sprite.width; i++) {
             for (j = 0; j < sprite.height; j++) {
@@ -212,5 +201,14 @@ var bit = {
             }
         }
     }
-
 };
+
+
+var BitApp = function () {};
+
+BitApp.prototype.init = bit_noop;
+BitApp.prototype.tick = bit_noop;
+BitApp.prototype.render = bit_noop;
+BitApp.prototype.postProcess = bit_noop;
+BitApp.prototype.overlay = bit_noop;
+BitApp.prototype.pixelShader = bit_noop;

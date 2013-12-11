@@ -31,7 +31,7 @@ deferredStart(function () {
     }
 
     bit.init(document.body, test, 320, 240, 2);
-    bit.run();
+    bit.start();
 });
 
 
