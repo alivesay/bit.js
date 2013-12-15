@@ -1,5 +1,9 @@
+/*global ArrayBuffer, Uint8ClampedArray, Uint32Array */
+/*jslint continue: true */
+
 'use strict';
 
+var $bit_global = this;
 var bit_noop = function () {};
 
 (function () {
@@ -25,16 +29,32 @@ var bit_noop = function () {};
     }
 }());
 
+var bit_util = {
+    arrayIndexOf: function (array, value) {
+        var i, len = array.length;
+        for (i = 0; i < len; i++) {
+            if (array[i] === value) { return i; }
+        }
+        return -1;
+    },
+
+    arrayRemove: function (array, value) {
+        var i = this.arrayIndexOf(array, value);
+        if (i !== -1) { array.splice(i, 1); }
+    }
+};
+
 
 var bit = {
 
     SECONDS_PER_FRAME: 1000 / 60,
 
     $window: window,
+    $_bit_render: $bit_global.bit_noop,
 
     _parentElement: null,
     _app: null,
-    _pixelId: null,
+    _backBufferCtxImageData: null,
     _initialized: false,
     _running: false,
     _requestAnimationFrameID: 0,
@@ -61,12 +81,15 @@ var bit = {
     width: 0,
     height: 0,
     scale: 1,
-    backBuffer: null,
+    backBufferCanvas: null,
     backBufferCtx: null,
-    screenBuffer: null,
+    backBufferCtxImageData: null,
+    backBufferCtxImageDataData: null,
+    screenBufferCanvas: null,
     screenBufferCtx: null,
-    framebuffer: null,
     offsetLUT: null,
+    _backBufferCtxImageDataDataBuffer: null,
+    buf8: null,
 
 
     init: function (parentElement, app, width, height, scale) {
@@ -74,6 +97,7 @@ var bit = {
             throw new Error("bit.init: Already initialized");
         }
 
+        this.$_bit_render = $bit_global.$_bit_render;
         this._parentElement = parentElement;
         this._app = app;
         this.width = width;
@@ -86,31 +110,43 @@ var bit = {
         for (x = 0; x < this.width; x++) {
             this.offsetLUT[x] = [];
             for (y = 0; y < this.height; y++) {
-                this.offsetLUT[x][y] = (x + y * this.width) << 2;
+                this.offsetLUT[x][y] = (x + y * this.width);
             }
         }
 
-        this.backBuffer = document.createElement('canvas');
-        this.backBuffer.id = 'bit_backBuffer_' + new Date().getTime().toString();
-        this.backBuffer.width = this.width;
-        this.backBuffer.height = this.height;
-        this.backBufferCtx = this.backBuffer.getContext('2d');
+        this.backBufferCanvas = document.createElement('canvas');
+        this.backBufferCanvas.id = 'bit_backBuffer_' + new Date().getTime().toString();
+        this.backBufferCanvas.width = this.width;
+        this.backBufferCanvas.height = this.height;
+        this.backBufferCtx = this.backBufferCanvas.getContext('2d');
+        this.backBufferCtx.imageSmoothingEnabled = false;
+        this.backBufferCtx.webkitImageSmoothingEnabled = false;
+        this.backBufferCtx.mozImageSmoothingEnabled = false;
 
-        this.screenBuffer = document.createElement('canvas');
-        this.screenBuffer.id = 'bit_frameBuffer_' + new Date().getTime().toString();
-        this.screenBuffer.width = this.width * this.scale;
-        this.screenBuffer.height = this.height * this.scale;
-        this.screenBuffer.style.backgroundColor = 'rgb(0,0,0)';
-        this.screenBufferCtx = this.screenBuffer.getContext('2d');
-        this.screenBufferCtx.imageSmoothingEnabled = false;
-        this.screenBufferCtx.webkitImageSmoothingEnabled = false;
-        this.screenBufferCtx.mozImageSmoothingEnabled = false;
-        this.screenBufferCtx.scale(this.scale, this.scale);
+        this.backBufferCtxImageData = this.backBufferCtx.createImageData(this.width, this.height);
+        this.backBufferCtxImageDataData = this.backBufferCtxImageData.data;
+        this._buf = new ArrayBuffer(this.backBufferCtxImageDataData.length);
+        this._buf8 = new Uint8ClampedArray(this._buf);
+        this.buffer = new Uint32Array(this._buf);
 
-        this._parentElement.appendChild(this.screenBuffer);
+        if (this.scale > 1) {
+            this.screenBufferCanvas = document.createElement('canvas');
+            this.screenBufferCanvas.id = 'bit_frameBuffer_' + new Date().getTime().toString();
+            this.screenBufferCanvas.width = this.width * this.scale;
+            this.screenBufferCanvas.height = this.height * this.scale;
+            this.screenBufferCanvas.style.backgroundColor = 'rgb(0,0,0)';
+            this.screenBufferCtx = this.screenBufferCanvas.getContext('2d');
+            this.screenBufferCtx.imageSmoothingEnabled = false;
+            this.screenBufferCtx.webkitImageSmoothingEnabled = false;
+            this.screenBufferCtx.mozImageSmoothingEnabled = false;
+            this.screenBufferCtx.setTransform(this.scale, 0, 0, this.scale, 0, 0);
 
-        this._pixelId = this.screenBufferCtx.getImageData(0, 0, this.width, this.height);
-        this.framebuffer = this._pixelId.data;
+        } else {
+            this.screenBufferCanvas = this.backBufferCanvas;
+            this.screenBufferCtx = this.backBufferCtx;
+        }
+        this._parentElement.appendChild(this.backBufferCanvas);
+        this._parentElement.appendChild(this.screenBufferCanvas);
 
         this._app.init();
 
@@ -127,7 +163,7 @@ var bit = {
 
         this._running = true;
 
-        this._requestAnimationFrameID = this.$window.requestAnimationFrame(function () { self._render(self); });
+        this._requestAnimationFrameID = this.$window.requestAnimationFrame(this.$_bit_render);
         this._timeoutID = setTimeout(function () { self._tick(self); }, self.SECONDS_PER_FRAME);
     },
 
@@ -147,22 +183,29 @@ var bit = {
         self._timeoutID = setTimeout(function () { self._tick(self); }, self.SECONDS_PER_FRAME);
     },
 
-    _render: function (self) {
-        self._app.render();
-        self._swapBuffer();
+    _render: function () {
+        this._app.render();
+        this._swapBuffer();
 
-        self._fpsCounter.calc();
+        this._fpsCounter.calc();
 
-        if (self._running) {
-            self._requestAnimationFrameID = self.$window.requestAnimationFrame(function () { self._render(self); });
+        if (this._running) {
+            this._requestAnimationFrameID = this.$window.requestAnimationFrame(this.$_bit_render);
         }
     },
 
     _swapBuffer: function () {
         this._postProcess();
-        this.backBufferCtx.putImageData(this._pixelId, 0, 0);
-        this._overlay();
-        this.screenBufferCtx.drawImage(this.backBuffer, 0, 0);
+        this.backBufferCtxImageDataData.set(this._buf8);
+
+        if (this.scale > 1) {
+            this.backBufferCtx.putImageData(this.backBufferCtxImageData, 0, 0);
+            this._overlay();
+            this.screenBufferCtx.drawImage(this.backBufferCanvas, 0, 0);
+        } else {
+            this.screenBufferCtx.putImageData(this.backBufferCtxImageData, 0, 0);
+            this._overlay();
+        }
     },
 
     _postProcess: function () {
@@ -175,40 +218,142 @@ var bit = {
 
     fps: function () { return this._fpsCounter.fps; },
 
+    clear: function () {
+
+    },
+
     putPixel: function (x, y, r, g, b, a) {
         if (x < 0 || x >= this.width || y < 0 || y >= this.height) { return; }
 
-        this.framebuffer[this.offsetLUT[x][y]] = r;
-        this.framebuffer[this.offsetLUT[x][y] + 1] = g;
-        this.framebuffer[this.offsetLUT[x][y] + 2] = b;
-        this.framebuffer[this.offsetLUT[x][y] + 3] = a;
+        this.buffer[this.offsetLUT[x][y]] = (a << 24) | (b << 16) | (g << 8) | r;
 
         this._app.pixelShader();
     },
 
     blit: function (sprite, x, y) {
-        var $data = sprite.imgData.data, offset, i, j;
+        var $data = sprite.buffer,
+            spriteWidth = sprite.width,
+            spriteHeight = sprite.height,
+            dx = spriteWidth,
+            dy = spriteHeight,
+            bx = x + spriteWidth,
+            by = y + spriteHeight,
+            offset;
 
-        for (i = 0; i < sprite.width; i++) {
-            for (j = 0; j < sprite.height; j++) {
-                offset = (i + j * sprite.width) << 2;
-                if ($data[offset + 3] > 0) {
-                    this.putPixel(x + i, y + j, $data[offset],
-                                                $data[offset + 1],
-                                                $data[offset + 2],
-                                                $data[offset + 3]);
+        while (dx--) {
+            bx--;
+            while (dy--) {
+                by--;
+                if (bx < 0 || bx >= this.width || by < 0 || by >= this.height) { break; }
+                offset = (dx + dy * spriteWidth);
+                if ($data[offset] << 24) {
+                    this.buffer[this.offsetLUT[bx][by]] = $data[offset];
                 }
             }
+            dy = spriteHeight;
+            by = y + spriteHeight;
         }
+    },
+
+    blitNoAlpha: function (sprite, x, y) {
+        var $data = sprite.buffer,
+            spriteWidth = sprite.width,
+            spriteHeight = sprite.height,
+            dx = spriteWidth,
+            dy = spriteHeight,
+            bx = x + spriteWidth,
+            by = y + spriteHeight;
+
+        while (dx--) {
+            bx--;
+            while (dy--) {
+                by--;
+                if (bx < 0 || bx >= this.width || by < 0 || by >= this.height) { break; }
+                this.buffer[this.offsetLUT[bx][by]] = $data[(dx + dy * spriteWidth)] | 0xFF000000;
+            }
+            dy = spriteHeight;
+            by = y + spriteHeight;
+        }
+    },
+
+    drawLine: function (x0, y0, x1, y1, color) {
+        // Bresenham's Line Algorithm}
+        var dx = Math.abs(x1 - x0), sx = x0 < x1 ? 1 : -1,
+            dy = Math.abs(y1 - y0), sy = y0 < y1 ? 1 : -1,
+            err = (dx > dy ? dx : -dy) >> 1,
+            e2 = err;
+
+        while (true) {
+            if (x0 >= 0 && y0 >= 0 && x0 < this.width && y0 < this.height) {
+                this.buffer[this.offsetLUT[x0][y0]] = color;
+            }
+            if (x0 === x1 && y0 === y1) { break; }
+            if (e2 > -dx) { err -= dy; x0 += sx; }
+            if (e2 < dy) { err += dx; y0 += sy; }
+        }
+    },
+
+    drawRect: function (x, y, w, h, color) {
+
+    }
+};
+
+var $_bit_render = function () {
+    bit._render();
+};
+
+var BitEntity = function () {
+    this.x = 0;
+    this.y = 0;
+    this.w = 0;
+    this.h = 0;
+    this.xSpeed = 0;
+    this.ySpeed = 0;
+};
+
+BitEntity.prototype.tick = function () {
+    this.x += this.xSpeed;
+    this.y += this.ySpeed;
+};
+
+BitEntity.prototype.render = function () {
+    bit.strokeRect(this.x, this.y, this.w, this.h, 0xFF0FF00FF);
+};
+
+var BitEntityManager = function () {
+    this.entities = [];
+};
+
+BitEntityManager.prototype.addEntity = function (entity) {
+    this.entities.push(entity);
+};
+
+BitEntityManager.prototype.removeEntity = function (entity) {
+    bit_util.arrayRemove(this.entities, entity);
+};
+
+BitEntityManager.prototype.tick = function () {
+    var $len = this.entities.length, i;
+    for (i = 0; i < $len; i++) {
+        this.entities[i].tick();
+    }
+};
+
+BitEntityManager.prototype.render = function () {
+    var $len = this.entities.length, i;
+    for (i = 0; i < $len; i++) {
+        this.entities[i].render();
     }
 };
 
 
-var BitApp = function () {};
+var BitApp = function () {
+    this.entityManager = new BitEntityManager();
+};
 
 BitApp.prototype.init = bit_noop;
-BitApp.prototype.tick = bit_noop;
-BitApp.prototype.render = bit_noop;
+BitApp.prototype.tick = function () { this.entityManager.tick(); };
+BitApp.prototype.render = function () { this.entityManager.render(); };
 BitApp.prototype.postProcess = bit_noop;
 BitApp.prototype.overlay = bit_noop;
 BitApp.prototype.pixelShader = bit_noop;
