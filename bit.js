@@ -1,5 +1,5 @@
-/*global ArrayBuffer, Uint8ClampedArray, Uint32Array */
-/*jslint continue: true */
+/*global ArrayBuffer, Uint8ClampedArray, Uint8Array, Uint32Array */
+/*jslint bitwise: true, browser: true, continue: true, nomen: true, plusplus: true, node: true */
 
 'use strict';
 
@@ -30,6 +30,7 @@ var bit_noop = function () {};
 }());
 
 var bit_util = {
+    /** Returns first index of value in array or -1. */
     arrayIndexOf: function (array, value) {
         var i, len = array.length;
         for (i = 0; i < len; i++) {
@@ -38,23 +39,54 @@ var bit_util = {
         return -1;
     },
 
+    /** Removes first occurrence of value in array if found. */
     arrayRemove: function (array, value) {
         var i = this.arrayIndexOf(array, value);
         if (i !== -1) { array.splice(i, 1); }
+    },
+
+    /** Returns true if little-endian architecture is detected. */
+    isLittleEndian: function () {
+        var buf = new ArrayBuffer(4),
+            buf8 = new Uint8Array(buf),
+            buf32 = new Uint32Array(buf);
+        buf32[0] = 0xDEADBEEF;
+        return (buf8[0] === 0xEF);
     }
 };
 
 
 var bit = {
 
-    SECONDS_PER_FRAME: 1000 / 60,
+    TICK_RATE: 1000 / 60,
+    AMASK: 0xFF000000,
+    BMASK: 0x00FF0000,
+    GMASK: 0x0000FF00,
+    RMASK: 0x000000FF,
+    RGBMASK: 0x00FFFFFF,
+    ASHIFT: 24,
+    BSHIFT: 16,
+    GSHIFT: 8,
+    RSHIFT: 0,
+    width: 0,
+    height: 0,
+    scale: 1,
+    backBufferCanvas: null,
+    backBufferCtx: null,
+    backBufferCtxImageData: null,
+    backBufferCtxImageDataData: null,
+    screenBufferCanvas: null,
+    screenBufferCtx: null,
+    bufferLUT: null,
 
-    $window: window,
+    $_window: window,
     $_bit_render: $bit_global.bit_noop,
-
     _parentElement: null,
     _app: null,
     _backBufferCtxImageData: null,
+    _backBufferCtxImageDataDataBuffer: null,
+    _buf: null,
+    _buf8: null,
     _initialized: false,
     _running: false,
     _requestAnimationFrameID: 0,
@@ -77,40 +109,78 @@ var bit = {
         }
     },
 
-    /* public */
-    width: 0,
-    height: 0,
-    scale: 1,
-    backBufferCanvas: null,
-    backBufferCtx: null,
-    backBufferCtxImageData: null,
-    backBufferCtxImageDataData: null,
-    screenBufferCanvas: null,
-    screenBufferCtx: null,
-    offsetLUT: null,
-    _backBufferCtxImageDataDataBuffer: null,
-    buf8: null,
+    _tick: function (self) {
+        self._app.tick();
+        self._lastTick = Date.now();
+        self._timeoutID = setTimeout(function () { self._tick(self); }, self.TICK_RATE);
+    },
 
+    _render: function () {
+        this._app.render();
+        this._swapBuffer();
 
+        this._fpsCounter.calc();
+
+        if (this._running) {
+            this._requestAnimationFrameID = this.$_window.requestAnimationFrame(this.$_bit_render);
+        }
+    },
+
+    _swapBuffer: function () {
+        this._postProcess();
+        this.backBufferCtxImageDataData.set(this._buf8);
+
+        if (this.scale > 1) {
+            this.backBufferCtx.putImageData(this.backBufferCtxImageData, 0, 0);
+            this._overlay();
+            this.screenBufferCtx.drawImage(this.backBufferCanvas, 0, 0);
+        } else {
+            this.screenBufferCtx.putImageData(this.backBufferCtxImageData, 0, 0);
+            this._overlay();
+        }
+    },
+
+    _postProcess: function () {
+        this._app.postProcess();
+    },
+
+    _overlay: function () {
+        this._app.overlay();
+    },
+
+    /** Initializes bit and adds canvas to parentElement. */
     init: function (parentElement, app, width, height, scale) {
         if (this._initialized === true) {
             throw new Error("bit.init: Already initialized");
         }
 
-        this.$_bit_render = $bit_global.$_bit_render;
+        this.$_bit_render = $bit_global._bit_render;
         this._parentElement = parentElement;
         this._app = app;
         this.width = width;
         this.height = height;
         this.scale = scale;
 
-        var x, y;
+        if (!$bit_global.bit_util.isLittleEndian()) {
+            this.AMASK = 0x000000FF;
+            this.BMASK = 0x0000FF00;
+            this.GMASK = 0x00FF0000;
+            this.RMASK = 0xFF000000;
+            this.RGBMASK = 0xFFFFFF00;
+            this.ASHIFT = 0;
+            this.BSHIFT = 8;
+            this.GSHIFT = 16;
+            this.RSHIFT = 24;
+        }
 
-        this.offsetLUT = [];
+        var x, y;
+        this.bufferLUT = [];
+        this.bufferLUT.length = this.width;
         for (x = 0; x < this.width; x++) {
-            this.offsetLUT[x] = [];
+            this.bufferLUT[x] = [];
+            this.bufferLUT[x].length = this.height;
             for (y = 0; y < this.height; y++) {
-                this.offsetLUT[x][y] = (x + y * this.width);
+                this.bufferLUT[x][y] = (x + y * this.width);
             }
         }
 
@@ -145,7 +215,7 @@ var bit = {
             this.screenBufferCanvas = this.backBufferCanvas;
             this.screenBufferCtx = this.backBufferCtx;
         }
-        this._parentElement.appendChild(this.backBufferCanvas);
+
         this._parentElement.appendChild(this.screenBufferCanvas);
 
         this._app.init();
@@ -154,6 +224,7 @@ var bit = {
         this._running = false;
     },
 
+    /** Starts rendering and logic tick. */
     start: function () {
         var self = this;
 
@@ -163,73 +234,63 @@ var bit = {
 
         this._running = true;
 
-        this._requestAnimationFrameID = this.$window.requestAnimationFrame(this.$_bit_render);
-        this._timeoutID = setTimeout(function () { self._tick(self); }, self.SECONDS_PER_FRAME);
+        this._requestAnimationFrameID = this.$_window.requestAnimationFrame(this.$_bit_render);
+        this._timeoutID = setTimeout(function () { self._tick(self); }, self.TICK_RATE);
     },
 
+    /** Stops rendering and logic tick. */
     stop: function () {
         if (!this._running) {
             throw new Error('bit.stop: Already stopped');
         }
 
-        this.$window.cancelRequestAnimationFrame(this._requestAnimationFrameID);
+        this.$_window.cancelRequestAnimationFrame(this._requestAnimationFrameID);
         clearTimeout(this._timeoutID);
         this._running = false;
     },
 
-    _tick: function (self) {
-        self._app.tick();
-        self._lastTick = Date.now();
-        self._timeoutID = setTimeout(function () { self._tick(self); }, self.SECONDS_PER_FRAME);
+    /** Returns integer color value from given RGB(A). */
+    getColor: function (r, g, b, a) {
+        return ((a === undefined ? 255 : a) << this.ASHIFT | b << this.BSHIFT | g << this.GSHIFT | r << this.RSHIFT) >>> 0;
     },
 
-    _render: function () {
-        this._app.render();
-        this._swapBuffer();
+    /** Blends two colors using source-alpha blending. */
+    blendColors: function (foregroundColor, backgroundColor) {
+        var srcR = foregroundColor >> this.RSHIFT & 0xFF,
+            srcG = foregroundColor >> this.GSHIFT & 0xFF,
+            srcB = foregroundColor >> this.BSHIFT & 0xFF,
+            srcA = foregroundColor >> this.ASHIFT & 0xFF,
+            dstR = backgroundColor >> this.RSHIFT & 0xFF,
+            dstG = backgroundColor >> this.GSHIFT & 0xFF,
+            dstB = backgroundColor >> this.BSHIFT & 0xFF;
 
-        this._fpsCounter.calc();
+        return (srcA === 0) ? backgroundColor : (((srcR * srcA) + (dstR * (255 - srcA))) >> 8) << this.RSHIFT |
+                                                (((srcG * srcA) + (dstG * (255 - srcA))) >> 8) << this.GSHIFT |
+                                                (((srcB * srcA) + (dstB * (255 - srcA))) >> 8) << this.BSHIFT |
+                                                srcA << this.ASHIFT;
+    },
 
-        if (this._running) {
-            this._requestAnimationFrameID = this.$window.requestAnimationFrame(this.$_bit_render);
+    /** Returns current rendered frames per second. */
+    fps: function () { return this._fpsCounter.fps | 0; },
+
+    /** Clears render buffer. */
+    clear: function (color) {
+        var i = this.buffer.length;
+        while (i--) {
+            this.buffer[i] = color;
         }
     },
 
-    _swapBuffer: function () {
-        this._postProcess();
-        this.backBufferCtxImageDataData.set(this._buf8);
-
-        if (this.scale > 1) {
-            this.backBufferCtx.putImageData(this.backBufferCtxImageData, 0, 0);
-            this._overlay();
-            this.screenBufferCtx.drawImage(this.backBufferCanvas, 0, 0);
-        } else {
-            this.screenBufferCtx.putImageData(this.backBufferCtxImageData, 0, 0);
-            this._overlay();
-        }
-    },
-
-    _postProcess: function () {
-        this._app.postProcess();
-    },
-
-    _overlay: function () {
-        this._app.overlay();
-    },
-
-    fps: function () { return this._fpsCounter.fps; },
-
-    clear: function () {
-
-    },
-
+    /**  Sets buffer value for a single pixel. */
     putPixel: function (x, y, r, g, b, a) {
         if (x < 0 || x >= this.width || y < 0 || y >= this.height) { return; }
 
-        this.buffer[this.offsetLUT[x][y]] = (a << 24) | (b << 16) | (g << 8) | r;
+        this.buffer[this.bufferLUT[x][y]] = a << this.ASHIFT | b << this.BSHIFT | g << this.GSHIFT | r << this.RSHIFT;
 
         this._app.pixelShader();
     },
 
+    /** Draws source buffer to render buffer using source-alpha blending. */
     blit: function (sprite, x, y) {
         var $data = sprite.buffer,
             spriteWidth = sprite.width,
@@ -244,10 +305,10 @@ var bit = {
             bx--;
             while (dy--) {
                 by--;
-                if (bx < 0 || bx >= this.width || by < 0 || by >= this.height) { break; }
+                if (bx < 0 || by < 0 || bx >= this.width || by >= this.height) { break; }
                 offset = (dx + dy * spriteWidth);
-                if ($data[offset] << 24) {
-                    this.buffer[this.offsetLUT[bx][by]] = $data[offset];
+                if ($data[offset] >> this.ASHIFT & this.AMASK) {
+                    this.buffer[this.bufferLUT[bx][by]] = this.blendColors($data[offset], this.buffer[this.bufferLUT[bx][by]]) | this.AMASK;
                 }
             }
             dy = spriteHeight;
@@ -255,6 +316,7 @@ var bit = {
         }
     },
 
+    /** Draws source buffer to render buffer forcing fixed 0xFF alpha. */
     blitNoAlpha: function (sprite, x, y) {
         var $data = sprite.buffer,
             spriteWidth = sprite.width,
@@ -269,15 +331,15 @@ var bit = {
             while (dy--) {
                 by--;
                 if (bx < 0 || bx >= this.width || by < 0 || by >= this.height) { break; }
-                this.buffer[this.offsetLUT[bx][by]] = $data[(dx + dy * spriteWidth)] | 0xFF000000;
+                this.buffer[this.bufferLUT[bx][by]] = $data[(dx + dy * spriteWidth)] | this.AMASK;
             }
             dy = spriteHeight;
             by = y + spriteHeight;
         }
     },
 
+    /** Draws a line to render buffer using Bresenham's algorithm. */
     drawLine: function (x0, y0, x1, y1, color) {
-        // Bresenham's Line Algorithm}
         var dx = Math.abs(x1 - x0), sx = x0 < x1 ? 1 : -1,
             dy = Math.abs(y1 - y0), sy = y0 < y1 ? 1 : -1,
             err = (dx > dy ? dx : -dy) >> 1,
@@ -285,7 +347,7 @@ var bit = {
 
         while (true) {
             if (x0 >= 0 && y0 >= 0 && x0 < this.width && y0 < this.height) {
-                this.buffer[this.offsetLUT[x0][y0]] = color;
+                this.buffer[this.bufferLUT[x0][y0]] = color;
             }
             if (x0 === x1 && y0 === y1) { break; }
             if (e2 > -dx) { err -= dy; x0 += sx; }
@@ -293,20 +355,39 @@ var bit = {
         }
     },
 
+    /** Draws an unfilled rectangle to render buffer. */
     drawRect: function (x, y, w, h, color) {
 
+    },
+
+    /** Draws a filled rectangle to render buffer. */
+    fillRect: function (x, y, w, h, color) {
+        var x1 = Math.max(0, x),
+            y1 = Math.max(0, y),
+            x2 = Math.min(this.width, x + w),
+            y2 = Math.min(this.height, y + h),
+            bx = x2,
+            by = y2;
+
+        while (bx-- > x1) {
+            while (by-- > y1) {
+                this.buffer[this.bufferLUT[bx][by]] = this.blendColors(color, this.buffer[this.bufferLUT[bx][by]]) | this.AMASK;
+            }
+            by = y2;
+        }
     }
 };
 
-var $_bit_render = function () {
+/** A global bit._render() reference to avoid using an anonymous function with RAF. */
+var _bit_render = function () {
     bit._render();
 };
 
 var BitEntity = function () {
     this.x = 0;
     this.y = 0;
-    this.w = 0;
-    this.h = 0;
+    this.width = 0;
+    this.height = 0;
     this.xSpeed = 0;
     this.ySpeed = 0;
 };
@@ -317,7 +398,7 @@ BitEntity.prototype.tick = function () {
 };
 
 BitEntity.prototype.render = function () {
-    bit.strokeRect(this.x, this.y, this.w, this.h, 0xFF0FF00FF);
+    bit.drawRect(this.x, this.y, this.width, this.height, bit.getColor(255, 0, 255));
 };
 
 var BitEntityManager = function () {
