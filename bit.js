@@ -52,6 +52,16 @@ var bit_util = {
             buf32 = new Uint32Array(buf);
         buf32[0] = 0xDEADBEEF;
         return (buf8[0] === 0xEF);
+    },
+
+    /** Returns a new object with new and overridden properties. */
+    extendObject: function (obj, props) {
+        var prop;
+        for (prop in props) {
+            if (props.hasOwnProperty(prop)) {
+                obj[prop] = props[prop];
+            }
+        }
     }
 };
 
@@ -356,16 +366,16 @@ var bit = {
     },
 
     /** Draws an unfilled rectangle to render buffer. */
-    drawRect: function (x, y, w, h, color) {
+    drawRect: function (x, y, width, height, color) {
 
     },
 
     /** Draws a filled rectangle to render buffer. */
-    fillRect: function (x, y, w, h, color) {
+    fillRect: function (x, y, width, height, color) {
         var x1 = Math.max(0, x),
             y1 = Math.max(0, y),
-            x2 = Math.min(this.width, x + w),
-            y2 = Math.min(this.height, y + h),
+            x2 = Math.min(this.width, x + width),
+            y2 = Math.min(this.height, y + height),
             bx = x2,
             by = y2;
 
@@ -383,58 +393,69 @@ var _bit_render = function () {
     bit._render();
 };
 
-var BitEntity = function () {
-    this.x = 0;
-    this.y = 0;
-    this.width = 0;
-    this.height = 0;
-    this.xSpeed = 0;
-    this.ySpeed = 0;
-};
+var BitEntity = {
+    x: 0,
+    y: 0,
+    width: 0,
+    height: 0,
+    xSpeed: 0,
+    ySpeed: 0,
 
-BitEntity.prototype.tick = function () {
-    this.x += this.xSpeed;
-    this.y += this.ySpeed;
-};
+    tick: function () {
+        this.x += this.xSpeed;
+        this.y += this.ySpeed;
+    },
 
-BitEntity.prototype.render = function () {
-    bit.drawRect(this.x, this.y, this.width, this.height, bit.getColor(255, 0, 255));
-};
-
-var BitEntityManager = function () {
-    this.entities = [];
-};
-
-BitEntityManager.prototype.addEntity = function (entity) {
-    this.entities.push(entity);
-};
-
-BitEntityManager.prototype.removeEntity = function (entity) {
-    bit_util.arrayRemove(this.entities, entity);
-};
-
-BitEntityManager.prototype.tick = function () {
-    var $len = this.entities.length, i;
-    for (i = 0; i < $len; i++) {
-        this.entities[i].tick();
-    }
-};
-
-BitEntityManager.prototype.render = function () {
-    var $len = this.entities.length, i;
-    for (i = 0; i < $len; i++) {
-        this.entities[i].render();
+    render: function () {
+        bit.drawRect(this.x, this.y, this.width, this.height, bit.getColor(255, 0, 255));
     }
 };
 
 
-var BitApp = function () {
-    this.entityManager = new BitEntityManager();
+var BitEntityManager = {
+    entities: [],
+
+    /** Adds a new entity. */
+    addEntity: function (entity) {
+        this.entities.push(entity);
+    },
+
+    /** Removes a contained entity. */
+    removeEntity: function (entity) {
+        bit_util.arrayRemove(this.entities, entity);
+    },
+
+    /** Calls tick function on each entity. */
+    tick: function () {
+        var $len = this.entities.length, i;
+        for (i = 0; i < $len; i++) {
+            this.entities[i].tick();
+        }
+    },
+
+    /** Calls render function on each entity. */
+    render: function () {
+        var $len = this.entities.length, i;
+        for (i = 0; i < $len; i++) {
+            this.entities[i].render();
+        }
+    }
 };
 
-BitApp.prototype.init = bit_noop;
-BitApp.prototype.tick = function () { this.entityManager.tick(); };
-BitApp.prototype.render = function () { this.entityManager.render(); };
-BitApp.prototype.postProcess = bit_noop;
-BitApp.prototype.overlay = bit_noop;
-BitApp.prototype.pixelShader = bit_noop;
+
+var BitApp = {
+    entityManager: Object.create(BitEntityManager),
+    init: bit_noop,
+    tick: function () { this.entityManager.tick(); },
+    render: function () { this.entityManager.render(); },
+    postProcess: bit_noop,
+    overlay: bit_noop,
+    pixelShader: bit_noop
+};
+
+
+var BitSprite = bit_util.extendObject(BitEntity, {
+    buffer: null,
+    frameCount: 0
+});
+
