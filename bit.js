@@ -498,7 +498,7 @@ var BitVector2D = BitObject.extend({
     x: 0,
     y: 0,
 
-    _construct: function(x, y) {
+    _construct: function (x, y) {
         this.x = x || 0;
         this.y = y || 0;
     },
