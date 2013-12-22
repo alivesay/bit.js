@@ -52,16 +52,53 @@ var bit_util = {
             buf32 = new Uint32Array(buf);
         buf32[0] = 0xDEADBEEF;
         return (buf8[0] === 0xEF);
+    }
+};
+
+var BitObject = {
+    /** Returns a new BitObject. */
+    create: function () {
+        var obj = Object.create(this);
+        obj._construct.apply(obj, arguments);
+        return obj;
     },
 
-    /** Returns a new object with new and overridden properties. */
-    extendObject: function (obj, props) {
-        var prop;
-        for (prop in props) {
-            if (props.hasOwnProperty(prop)) {
-                obj[prop] = props[prop];
+    /** Returns a new BitObject with new and overridden properties. */
+    extend: function (props, descriptors) {
+        var newObject = Object.create(this), name, propNames, i;
+
+        descriptors = descriptors || {};
+        if (props) {
+            propNames = Object.getOwnPropertyNames(props);
+            i = propNames.length;
+            while (i--) {
+                name = propNames[i];
+                if (!descriptors.hasOwnProperty(name)) {
+                    newObject[name] = props[name];
+                }
             }
         }
+        Object.defineProperties(newObject, descriptors);
+
+        return newObject;
+    },
+
+    _construct: bit_noop,
+
+    _super: function (obj, method, args) {
+        return Object.getPrototypeOf(obj)[method].apply(this, args);
+    }
+};
+
+
+var bit_math = {
+    /** Returns dot product of given sequences. */
+    dot: function (a, b) {
+        var n = 0, i = Math.min(a.length, b.length);
+        while (i--) {
+            n += a[i] * b[i];
+        }
+        return n;
     }
 };
 
@@ -315,7 +352,7 @@ var bit = {
             bx--;
             while (dy--) {
                 by--;
-                if (bx < 0 || by < 0 || bx >= this.width || by >= this.height) { break; }
+                if (bx < 0 || by < 0 || bx >= this.width || by >= this.height) { continue; }
                 offset = (dx + dy * spriteWidth);
                 if ($data[offset] >> this.ASHIFT & this.AMASK) {
                     this.buffer[this.bufferLUT[bx][by]] = this.blendColors($data[offset], this.buffer[this.bufferLUT[bx][by]]) | this.AMASK;
@@ -340,7 +377,7 @@ var bit = {
             bx--;
             while (dy--) {
                 by--;
-                if (bx < 0 || bx >= this.width || by < 0 || by >= this.height) { break; }
+                if (bx < 0 || bx >= this.width || by < 0 || by >= this.height) { continue; }
                 this.buffer[this.bufferLUT[bx][by]] = $data[(dx + dy * spriteWidth)] | this.AMASK;
             }
             dy = spriteHeight;
@@ -388,74 +425,130 @@ var bit = {
     }
 };
 
+
 /** A global bit._render() reference to avoid using an anonymous function with RAF. */
 var _bit_render = function () {
     bit._render();
 };
 
-var BitEntity = {
-    x: 0,
-    y: 0,
-    width: 0,
-    height: 0,
-    xSpeed: 0,
-    ySpeed: 0,
 
-    tick: function () {
-        this.x += this.xSpeed;
-        this.y += this.ySpeed;
-    },
-
-    render: function () {
-        bit.drawRect(this.x, this.y, this.width, this.height, bit.getColor(255, 0, 255));
-    }
-};
-
-
-var BitEntityManager = {
-    entities: [],
+var BitEntityManager = BitObject.extend({
+    entities: null,
 
     /** Adds a new entity. */
     addEntity: function (entity) {
+        this.entities = this.entities || [];
         this.entities.push(entity);
     },
 
     /** Removes a contained entity. */
     removeEntity: function (entity) {
-        bit_util.arrayRemove(this.entities, entity);
+        if (this.entities) {
+            bit_util.arrayRemove(this.entities, entity);
+        }
     },
 
     /** Calls tick function on each entity. */
     tick: function () {
-        var $len = this.entities.length, i;
-        for (i = 0; i < $len; i++) {
-            this.entities[i].tick();
+        var len, i;
+        if (this.entities) {
+            len = this.entities.length;
+            for (i = 0; i < len; i++) {
+                this.entities[i].tick();
+            }
         }
     },
 
     /** Calls render function on each entity. */
     render: function () {
-        var $len = this.entities.length, i;
-        for (i = 0; i < $len; i++) {
-            this.entities[i].render();
+        var len, i;
+        if (this.entities) {
+            len = this.entities.length;
+            for (i = 0; i < len; i++) {
+                this.entities[i].render();
+            }
         }
+    },
+
+    /** Returns true if instance has child entities. */
+    hasChildren: function () {
+        return this.entities !== null && this.entities.length > 0;
     }
-};
+});
 
 
-var BitApp = {
-    entityManager: Object.create(BitEntityManager),
+var BitEntity = BitEntityManager.extend({
+    tick: bit_noop,
+    render: bit_noop
+});
+
+
+var BitApp = BitObject.extend({
+    entityManager: BitEntityManager.create(),
     init: bit_noop,
     tick: function () { this.entityManager.tick(); },
     render: function () { this.entityManager.render(); },
     postProcess: bit_noop,
     overlay: bit_noop,
     pixelShader: bit_noop
-};
-
-
-var BitSprite = bit_util.extendObject(BitEntity, {
-    buffer: null,
-    frameCount: 0
 });
 
+
+var BitVector2D = BitObject.extend({
+    x: 0,
+    y: 0,
+
+    _construct: function(x, y) {
+        this.x = x || 0;
+        this.y = y || 0;
+    },
+
+    cross: function (vector) {
+        return this.x * vector.y + this.y * vector.x;
+    },
+    dot: function (vector) {
+        return this.x * vector.x + this.y * vector.y;
+    },
+    length: function () {
+        return Math.sqrt(this.x * this.x + this.y * this.y);
+    },
+    normalize: function () {
+        var normalVector = BitVector2D.create(),
+            length = this.length();
+        if (length > 0) {
+            normalVector.x /= length;
+            normalVector.y /= length;
+        }
+        return normalVector;
+    }
+});
+
+
+var BitSpriteEntity = BitEntity.extend({
+    buffer: null,
+    frameCount: 0,
+    width: 0,
+    height: 0,
+    xSpeed: 0,
+    ySpeed: 0,
+    vec2: null,
+
+    _construct: function () {
+        this.vec2 = BitVector2D.create();
+    },
+
+    tick: function () {
+        this.vec2.x += this.xSpeed;
+        this.vec2.y += this.ySpeed;
+    },
+
+    render: function () {
+        bit.drawRect(this.vec2.x, this.vec2.y, this.width, this.height, bit.getColor(255, 0, 255));
+    }
+},  { x: { get: function () { return this.vec2.x; },
+           set: function (x) { this.vec2.x = x; }
+         },
+      y: { get: function () { return this.vec2.y; },
+           set: function (y) { this.vec2.y = y; }
+         }
+    });
