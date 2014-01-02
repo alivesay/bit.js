@@ -1,4 +1,4 @@
-/*global BitApp, bit */
+/*global BitApp, BitEntity, bit */
 
 'use strict';
 
@@ -32,56 +32,122 @@ if (navigator.getUserMedia) {
             video_streaming = true;
         },
         function (e) {
-            console.log("Y YOU KNOW WORK?");
+            console.log("Y YOU NO WORK?");
         });
 }
 
 
-var testApp = new BitApp(),
+var testApp = {},
     spriteImage = document.createElement('img');
 
-//spriteImage.src = "ship.png";
+spriteImage.src = "ship.png";
+
+
+
 
 deferredStart(function () {
+    var TestEntity = BitSpriteEntity.extend({
+        tick: function (app, canvas, screen) {
+            if (this.x < 0 || this.x >= screen.width - this.buffer.width) { this.velocity.x = -this.velocity.x; }
+            if (this.y < 0 || this.y >= screen.height - this.buffer.height) { this.velocity.y = -this.velocity.y; }
+            this.x += this.velocity.x;
+            this.y += this.velocity.y;
+        }
+    });
+
+    var testApp = BitApp.create('testApp');
+
     var entity, spriteCount;
 
-    for (spriteCount = 0; spriteCount < 100; spriteCount++) {
-        entity = new BitEntity();
+    var canvas = BitCanvas.create(document.body, 320, 240, 3);
+
+    var sprite = BitBuffer.create(spriteImage.width, spriteImage.height);
+
+    sprite.canvasCtx.drawImage(spriteImage, 0, 0);
+    sprite.imgData = sprite.canvasCtx.getImageData(0, 0, spriteImage.width, spriteImage.height);
+    sprite.data = new Uint32Array(sprite.imgData.data.buffer);
+
+    for (spriteCount = 0; spriteCount < 10; spriteCount++) {
+        entity = TestEntity.create(sprite);
+
         entity.x = Math.max(0, Math.floor(Math.random() * (320 - 96)));
         entity.y = Math.max(0, Math.floor(Math.random() * (240 - 96)));
-        entity.w = spriteImage.width;
-        entity.h = spriteImage.height;
-        entity.xSpeed = Math.floor(Math.random() * 2) + 1;
-        entity.ySpeed = Math.floor(Math.random() * 2);
-
-        testApp.entityManager.addEntity(entity);
+        entity.velocity.x = Math.floor(Math.random() * 3) + 1;
+        entity.velocity.y = Math.floor(Math.random() * 3) + 1;
+        canvas.screens[0].addEntity(entity);
     }
 
-    bit.init(document.body, testApp, 320, 240, 3);
-    bit.start();
+    testApp.addCanvas(canvas);
+    testApp.start();
 });
 
 
 testApp.init = function () {
-    /*
-    this.sprite = {};
-    this.sprite.canvas = document.createElement('canvas');
-    this.sprite.ctx = this.sprite.canvas.getContext('2d');
-    this.sprite.ctx.drawImage(spriteImage, 0, 0);
-    this.sprite.width = spriteImage.width;
-    this.sprite.height = spriteImage.height;
-    this.sprite.imgData = this.sprite.ctx.getImageData(0, 0, spriteImage.width, spriteImage.height);
-    this.sprite.buffer = new Uint32Array(this.sprite.imgData.data.buffer);
-    */
 
+
+    this.backgroundColor = bit.getColor(0, 0, 0);
     this.webcamSprite = null;
+    this.waveState = 1;
+    this.waveDir = 1;
 };
 
 
 testApp.postProcess = function () {
+    this.scanlines();
+    this.waves();
+};
+
+testApp.grid = function (size, color) {
     var $bit = bit,
-        $buffer = $bit.buffer,
-        $lut = $bit.offsetLUT,
+        x = $bit.width - size - 1,
+        y = $bit.height - 1;
+
+    while (x >= 0) {
+        $bit.drawLine(x, 0, x, y, color);
+        x -= size;
+    }
+    x = $bit.width - 1;
+    y -= size;
+    while (y >= 0) {
+        $bit.drawLine(0, y, x, y, color);
+        y -= size;
+    }
+}
+
+testApp.waves = function () {
+    var $bit = bit,
+        $buffer = $bit.data,
+        $lut = $bit.dataLUT,
+        x = $bit.width,
+        y = $bit.height,
+        xShift,
+        xMod,
+        xInverse;
+
+
+    while (y--) {
+        xShift = ((Math.sin(y * 0.09) * 10 * Math.sin(Date.now() / 6000 * 10 + 1)) + (Math.sin(y * 0.09 + 5) * 10 * Math.sin(Date.now() / 6000 * 10 + 2.8))) | 0;
+
+        while (x--) {
+
+            if (xShift > 0) {
+                xMod = x - xShift;
+                $buffer[$lut[x][y]] = (xMod >= 0) ? $buffer[$lut[xMod][y]] : 0xff000000;
+            } else if (xShift < 0) {
+                xInverse = $bit.width - x - 1;
+                xMod = xInverse - xShift;
+                $buffer[$lut[xInverse][y]] = (xMod < $bit.width) ? $buffer[$lut[xMod][y]] : 0xff000000;
+            }
+        }
+        x = $bit.width;
+    }
+
+};
+
+testApp.scanlines = function () {
+    var $bit = bit,
+        $buffer = $bit.data,
+        $lut = $bit.dataLUT,
         x = $bit.width,
         y = $bit.height,
         color,
@@ -94,52 +160,63 @@ testApp.postProcess = function () {
                 $buffer[$lut[x][y]] = (color >> 24) << 24 |
                                       (((color >> 16) & 0xFF) * scanlineAmount) << 16 |
                                       (((color >> 8) & 0xFF) * scanlineAmount) << 8 |
-                    ((color & 0xFF) * scanlineAmount) | 0;
+                                      ((color & 0xFF) * scanlineAmount) | 0;
             }
         }
         y = $bit.height;
     }
 };
 
-testApp.tick = function () {
-    var $entities = this.entityManager.entities,
+testApp.tick2 = function () {
+    var $entities = this.scenes['test'].entities,
         i,
         $bit = bit,
-        $s;
+        $sprite = this.webcamSprite,
+        $e;
+
+    if (this.webcamSprite === null)  return;
 
     for (i = 0; i < $entities.length; i++) {
-        $s = $entities[i];
-        if ($s.x < 0 || $s.x > $bit.width - $s.w) { $s.xSpeed = -$s.xSpeed; }
-        if ($s.y < 0 || $s.y > $bit.height - $s.h) { $s.ySpeed = -$s.ySpeed; }
+        $e = $entities[i];
+        if ($e.x < 0 || $e.x >= $bit.width - $sprite.width) { $e.xVelocity = -$e.xVelocity; }
+        if ($e.y < 0 || $e.y >= $bit.height - $sprite.height) { $e.yVelocity = -$e.yVelocity; }
     }
 
-    this.entityManager.tick();
 };
 
-testApp.render = function () {
+testApp.render2 = function () {
     var $bit = bit,
-        $buffer = $bit.buffer,
-        $lut = $bit.offsetLUT,
+        $buffer = $bit.data,
+        $lut = $bit.dataLUT,
         //$sprite = this.sprite,
-        $entities = this.entityManager.entities,
+        $entities = this.scenes['test'].entities,
         x = $bit.width,
         y = $bit.height,
         l, i;
 
+        //$bit.clear(this.backgroundColor);
+
+
+
     while (x--) {
         while (y--) {
             l = (Math.random() * 255) | 0;
-            $buffer[$lut[x][y]] = 255 << 24 | l << 16 | l << 8 | l;
+            $buffer[$lut[x][y]] = 255 << $bit.ASHIFT | l << $bit.GSHIFT | l << $bit.BSHIFT | l << $bit.RSHIFT;
         }
         y = $bit.height;
     }
-/*
-    i = $entities.length;
-    while (i--) {
-        $bit.blit($sprite, $entities[i].x, $entities[i].y);
-    }
-*/
+
+    this.grid(8, 0xff6030b0);
+
+    /*
+        i = $entities.length;
+        while (i--) {
+            $bit.blit($sprite, $entities[i].x, $entities[i].y);
+        }
+    */
    // this.entityManager.render();
+
+    $bit.fillRect(10, 140, 300, 90, $bit.getColor(138, 43, 226, 128));
 
     /* video test */
     if (this.webcamSprite === null && video.videoWidth > 0) {
@@ -158,20 +235,23 @@ testApp.render = function () {
         this.webcamSprite.ctx.clearRect(0, 0, this.webcamSprite.width, this.webcamSprite.height);
         this.webcamSprite.ctx.drawImage(video, 0, 0, this.webcamSprite.width, this.webcamSprite.height);
         this.webcamSprite.imgData = this.webcamSprite.ctx.getImageData(0, 0, this.webcamSprite.width, this.webcamSprite.height);
-        this.webcamSprite.buffer = new Uint32Array(this.webcamSprite.imgData.data.buffer);
+        this.webcamSprite.data = new Uint32Array(this.webcamSprite.imgData.data.buffer);
 
         i = $entities.length;
         while (i--) {
             $bit.blitNoAlpha(this.webcamSprite, $entities[i].x, $entities[i].y);
         }
     }
+
+    $bit.fillRect(10, 30, 300, 90, $bit.getColor(0, 0, 0, 128));
+
 };
 
 testApp.overlay = function () {
     var text = 'TV OUT',
         $bit = bit,
         $bbCtx = $bit.backBufferCtx,
-        fps = $bit.fps() | 0;
+        fps = $bit.fps();
 
     $bbCtx.font = "13px Verdana";
     $bbCtx.strokeStyle = 'rgba(0,150,0,0.5)';
@@ -183,5 +263,4 @@ testApp.overlay = function () {
     $bbCtx.fillText(fps, 11, 18);
 
     $bbCtx.fillStyle = 'rgba(30,30,30,0.5)';
-    $bbCtx.fillRect(10, 200, 300, 30);
 };
