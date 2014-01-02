@@ -25,8 +25,6 @@ var BitUtil = {
         if (i !== -1) { array.splice(i, 1); }
     },
 
-
-
     /** Returns true if little-endian architecture is detected. */
     isLittleEndian: function () {
         var buf = new ArrayBuffer(4),
