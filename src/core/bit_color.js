@@ -8,7 +8,7 @@ goog.provide('bit.core.BitColor');
 goog.require('bit.core.BitObject');
 goog.require('bit.core.BitUtil');
 
-var BitColor = new BitObject.extend({
+var BitColor = BitObject.extend({
     AMASK: BitUtil.isLittleEndian() ? 0xFF000000 : 0x000000FF,
     BMASK: BitUtil.isLittleEndian() ? 0x00FF0000 : 0x0000FF00,
     GMASK: BitUtil.isLittleEndian() ? 0x0000FF00 : 0x00FF0000,
