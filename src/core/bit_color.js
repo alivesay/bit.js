@@ -9,15 +9,29 @@ goog.require('bit.core.BitObject');
 goog.require('bit.core.BitUtil');
 
 var BitColor = BitObject.extend({
-    AMASK: BitUtil.isLittleEndian() ? 0xFF000000 : 0x000000FF,
-    BMASK: BitUtil.isLittleEndian() ? 0x00FF0000 : 0x0000FF00,
-    GMASK: BitUtil.isLittleEndian() ? 0x0000FF00 : 0x00FF0000,
-    RMASK: BitUtil.isLittleEndian() ? 0x000000FF : 0xFF000000,
-    RGBMASK: BitUtil.isLittleEndian() ? 0x00FFFFFF : 0xFFFFFF00,
-    ASHIFT: BitUtil.isLittleEndian() ? 24 : 0,
-    BSHIFT: BitUtil.isLittleEndian() ? 16 : 8,
-    GSHIFT: BitUtil.isLittleEndian() ? 8 : 16,
-    RSHIFT: BitUtil.isLittleEndian() ? 0 : 24,
+    AMASK: 0xFF000000,
+    BMASK: 0x00FF0000,
+    GMASK: 0x0000FF00,
+    RMASK: 0x000000FF,
+    RGBMASK: 0x00FFFFFF,
+    ASHIFT: 24,
+    BSHIFT: 16,
+    GSHIFT: 8,
+    RSHIFT: 0,
+
+    _construct: function () {
+        if (!BitUtil.isLittleEndian()) {
+            this.AMASK = 0x000000FF;
+            this.BMASK = 0x0000FF00;
+            this.GMASK = 0x00FF0000;
+            this.RMASK = 0xFF000000;
+            this.RGBMASK = 0xFFFFFF00;
+            this.ASHIFT = 0;
+            this.BSHIFT = 8;
+            this.GSHIFT = 16;
+            this.RSHIFT = 24;
+        }
+    },
 
     /** Returns integer color value from given RGB(A). */
     getColor: function (r, g, b, a) {
