@@ -27,7 +27,7 @@ var BitBuffer = BitObject.extend('BitBuffer', {
         this.dataLUT = this._buildLUT(this.width, this.height);
 
         this.canvas = document.createElement('canvas');
-        this.canvas.id = 'bit_buffer_' + new Date().getTime().toString();
+        this.canvas.id = 'bit_buffer_' + new Date().now();
         this.canvas.width = this.width;
         this.canvas.height = this.height;
         this.canvasCtx = this.canvas.getContext('2d');
