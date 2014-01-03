@@ -10,21 +10,24 @@ goog.require('bit.core.bit_noop');
 
 var BitObject = {
     mixins: null,
+    id: 0,
 
-    /** Returns a new BitObject. */
+    generateID: function () {
+        return BitObject.id++;
+    },
+
     create: function () {
         var newObject = Object.create(this);
+        newObject.id = this.generateID();
         this._construct.apply(newObject, arguments);
         return newObject;
     },
 
-    /** Returns a new BitObject with new and overridden properties.
-     *  Optional mixins array can be provided, with highest priority last.
-     * */
     extend: function (props, descriptors, mixins) {
         var newObject = Object.create(this), name, propNames, i, j;
 
         descriptors = descriptors || {};
+
         if (props) {
             propNames = Object.getOwnPropertyNames(props);
             i = propNames.length;
