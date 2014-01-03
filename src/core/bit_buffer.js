@@ -27,7 +27,7 @@ var BitBuffer = BitObject.extend('BitBuffer', {
         this.dataLUT = this._buildLUT(this.width, this.height);
 
         this.canvas = document.createElement('canvas');
-        this.canvas.id = 'bit_buffer_' + new Date.now();
+        this.canvas.id = 'bit_buffer_' + Date.now();
         this.canvas.width = this.width;
         this.canvas.height = this.height;
         this.canvasCtx = this.canvas.getContext('2d');
@@ -98,6 +98,7 @@ var BitBuffer = BitObject.extend('BitBuffer', {
     /** Draws source data to render data forcing fixed 0xFF alpha. */
     blitNoAlpha: function (sprite, x, y) {
         var $data = sprite.data,
+            $dataLUT = sprite.dataLUT,
             spriteWidth = sprite.width,
             spriteHeight = sprite.height,
             dx = spriteWidth,
@@ -110,7 +111,7 @@ var BitBuffer = BitObject.extend('BitBuffer', {
             while (dy--) {
                 by--;
                 if (bx < 0 || bx >= this.width || by < 0 || by >= this.height) { continue; }
-                this.data[this.dataLUT[bx][by]] = $data[(dx + dy * spriteWidth)] | BitColor.AMASK;
+                this.data[this.dataLUT[bx][by]] = $data[$data.dataLUT[dx][dy]] | BitColor.AMASK;
             }
             dy = spriteHeight;
             by = y + spriteHeight;
