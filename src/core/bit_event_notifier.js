@@ -9,7 +9,7 @@ goog.require('bit.core.BitEventHandler');
 goog.require('bit.core.BitObject');
 goog.require('bit.core.BitUtil');
 
-var BitEventNotifier = BitObject.extend({
+var BitEventNotifier = BitObject.extend('BitEventNotifier', {
     _handlers: [],
 
     addHandler: function (handler, qualifiedEventName) {

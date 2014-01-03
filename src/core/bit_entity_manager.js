@@ -8,7 +8,7 @@ goog.provide('bit.core.BitEntityManager');
 goog.require('bit.core.BitObject');
 goog.require('bit.core.BitUtil');
 
-var BitEntityManager = BitObject.extend({
+var BitEntityManager = BitObject.extend('BitEntityManager', {
     entities: null,
 
     /** Adds a new entity. */

@@ -7,7 +7,7 @@
 goog.provide('bit.core.BitMath');
 goog.require('bit.core.BitObject');
 
-var BitMath = BitObject.extend({
+var BitMath = BitObject.extend('BitMath', {
     /** Returns dot product of given sequences. */
     dot: function (a, b) {
         var n = 0, i = Math.min(a.length, b.length);

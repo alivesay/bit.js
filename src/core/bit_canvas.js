@@ -9,7 +9,7 @@ goog.require('bit.core.BitEntityManager');
 goog.require('bit.core.BitObject');
 goog.require('bit.core.BitScreen');
 
-var BitCanvas = BitObject.extend({
+var BitCanvas = BitObject.extend('BitCanvas', {
     width: 0,
     height: 0,
     scale: 1,

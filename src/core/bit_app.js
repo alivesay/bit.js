@@ -33,7 +33,7 @@ goog.require('bit.core.BitEventNotifier');
     }
 }());
 
-var BitApp = BitObject.extend({
+var BitApp = BitObject.extend('BitApp', {
     TICK_RATE: 1000 / 60,
 
     /*

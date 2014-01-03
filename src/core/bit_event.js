@@ -7,7 +7,7 @@
 goog.provide('bit.core.BitEvent');
 goog.require('bit.core.BitObject');
 
-var BitEvent = BitObject.extend({
+var BitEvent = BitObject.extend('BitEvent', {
     name: null,
     type: 'BitEvent',
     notifier: null,

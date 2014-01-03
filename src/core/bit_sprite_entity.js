@@ -9,7 +9,7 @@ goog.require('bit.core.BitEntity');
 goog.require('bit.core.BitRectangle');
 goog.require('bit.core.BitVector2D');
 
-var BitSpriteEntity = BitEntity.extend({
+var BitSpriteEntity = BitEntity.extend('BitSpriteEntity', {
     buffer: null,
     frameCount: 0,
     velocity: null,

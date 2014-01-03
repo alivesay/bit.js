@@ -7,7 +7,7 @@
 goog.provide('bit.core.BitDimensions');
 goog.require('bit.core.BitObject');
 
-var BitDimensions = BitObject.extend({
+var BitDimensions = BitObject.extend('BitDimensions', {
     width: 0,
     height: 0,
 

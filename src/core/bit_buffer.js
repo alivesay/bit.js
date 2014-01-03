@@ -8,7 +8,7 @@ goog.provide('bit.core.BitBuffer');
 goog.require('bit.core.BitColor');
 goog.require('bit.core.BitObject');
 
-var BitBuffer = BitObject.extend({
+var BitBuffer = BitObject.extend('BitBuffer', {
     width: 0,
     height: 0,
     canvas: null,

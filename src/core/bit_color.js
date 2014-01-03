@@ -8,7 +8,7 @@ goog.provide('bit.core.BitColor');
 goog.require('bit.core.BitObject');
 goog.require('bit.core.BitUtil');
 
-var BitColor = BitObject.extend({
+var BitColor = BitObject.extend('BitColor', {
     AMASK: 0xFF000000,
     BMASK: 0x00FF0000,
     GMASK: 0x0000FF00,

@@ -7,7 +7,7 @@
 goog.provide('bit.core.BitEventHandler');
 goog.require('bit.core.BitObject');
 
-var BitEventHandler = BitObject.extend({
+var BitEventHandler = BitObject.extend('BitEventHandler', {
     handleEvent: function (event) {
         throw new Error("BitEventHandler.handleEvent: No implementation for abstract method defined");
     }

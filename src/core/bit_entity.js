@@ -9,7 +9,7 @@ goog.require('bit.core.BitEntityManager');
 goog.require('bit.core.BitEventHandler');
 goog.require('bit.core.BitObject');
 
-var BitEntity = BitObject.extend({
+var BitEntity = BitObject.extend('BitEntity', {
     id: null,
     active: true,
     parent: null

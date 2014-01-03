@@ -9,7 +9,7 @@ goog.require('bit.core.BitDimensions');
 goog.require('bit.core.BitObject');
 goog.require('bit.core.BitVector2D');
 
-var BitRectangle = BitObject.extend({
+var BitRectangle = BitObject.extend('BitRectangle', {
     _construct: function (x, y, width, height) {
         this._constructMixin(BitVector2D, [x, y]);
         this._constructMixin(BitDimensions, [width, height]);

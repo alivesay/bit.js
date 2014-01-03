@@ -7,7 +7,7 @@
 goog.provide('bit.core.BitVector2D');
 goog.require('bit.core.BitObject');
 
-var BitVector2D = BitObject.extend({
+var BitVector2D = BitObject.extend('BitVector2D', {
     x: 0,
     y: 0,
 

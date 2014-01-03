@@ -10,7 +10,8 @@ goog.require('bit.core.bit_noop');
 
 var BitObject = {
     mixins: null,
-    id: 0,
+    instanceID: 0,
+    className: 'BitObject',
 
     generateID: function () {
         return BitObject.id++;
@@ -18,23 +19,25 @@ var BitObject = {
 
     create: function () {
         var newObject = Object.create(this);
-        newObject.id = this.generateID();
+        newObject.instanceID = this.generateID();
         this._construct.apply(newObject, arguments);
         return newObject;
     },
 
-    extend: function (props, descriptors, mixins) {
-        var newObject = Object.create(this), name, propNames, i, j;
+    extend: function (name, props, descriptors, mixins) {
+        var newObject = Object.create(this), propName, propNames, i, j;
 
         descriptors = descriptors || {};
+
+        newObject.className = name;
 
         if (props) {
             propNames = Object.getOwnPropertyNames(props);
             i = propNames.length;
             while (i--) {
-                name = propNames[i];
-                if (!descriptors.hasOwnProperty(name)) {
-                    newObject[name] = props[name];
+                propName = propNames[i];
+                if (!descriptors.hasOwnProperty(propName)) {
+                    newObject[propName] = props[propName];
                 }
             }
         }
@@ -54,9 +57,9 @@ var BitObject = {
                 propNames = Object.getOwnPropertyNames(mixins[i]);
                 j = propNames.length;
                 while (j--) {
-                    name = propNames[j];
-                    if (!newObject.hasOwnProperty(name)) {
-                        newObject[name] = mixins[i][name];
+                    propName = propNames[j];
+                    if (!newObject.hasOwnProperty(propName)) {
+                        newObject[propName] = mixins[i][propName];
                     }
                 }
             }

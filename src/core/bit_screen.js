@@ -10,7 +10,7 @@ goog.require('bit.core.BitEntityManager');
 goog.require('bit.core.BitObject');
 goog.require('bit.core.BitRectangle');
 
-var BitScreen = BitObject.extend({
+var BitScreen = BitObject.extend('BitScreen', {
 
     _construct: function (width, height) {
         this._constructMixin(BitRectangle, [0, 0, width, height]);
