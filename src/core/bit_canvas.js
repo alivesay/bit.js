@@ -15,7 +15,6 @@ var BitCanvas = BitObject.extend('BitCanvas', {
     scale: 1,
     canvas: null,
     canvasCtx: null,
-
     parentElement: null,
 
     _construct: function (parentElement, width, height, scale) {
@@ -47,7 +46,6 @@ var BitCanvas = BitObject.extend('BitCanvas', {
 
     _swapBuffer: function () {
         this._postProcess();
-        this._canvasCtxImageData.data.set(this._buf8);
 
         if (this.scale > 1) {
             this.backBufferCtx.putImageData(this.backBufferCtxImageData, 0, 0);

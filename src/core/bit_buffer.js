@@ -11,14 +11,11 @@ goog.require('bit.core.BitObject');
 var BitBuffer = BitObject.extend('BitBuffer', {
     width: 0,
     height: 0,
-    canvas: null,
-    canvasCtx: null,
     data: null,
     dataLUT: null,
 
-    _canvasCtxImageData: null,
-    _buf: null,
-    _buf8: null,
+    _buffer: null,
+    _buffer8: null,
 
     _construct: function (width, height) {
         this.width = width || this.width;
@@ -26,18 +23,9 @@ var BitBuffer = BitObject.extend('BitBuffer', {
 
         this.dataLUT = this._buildLUT(this.width, this.height);
 
-        this.canvas = document.createElement('canvas');
-        this.canvas.id = 'bit_buffer_' + Date.now();
-        this.canvas.width = this.width;
-        this.canvas.height = this.height;
-        this.canvasCtx = this.canvas.getContext('2d');
-        this.canvasCtx.imageSmoothingEnabled = false;
-        this.canvasCtx.webkitImageSmoothingEnabled = false;
-        this.canvasCtx.mozImageSmoothingEnabled = false;
-        this._canvasCtxImageData = this.canvasCtx.createImageData(this.width, this.height);
-        this._buf = new ArrayBuffer(this._canvasCtxImageData.data.length);
-        this._buf8 = new Uint8ClampedArray(this._buf);
-        this.data = new Uint32Array(this._buf);
+        this._buffer = new ArrayBuffer(this.width * this.height * 4);
+        this._buffer8 = new Uint8ClampedArray(this._buffer);
+        this.data = new Uint32Array(this._buffer);
     },
 
     _buildLUT: function (xCount, yCount) {
@@ -66,7 +54,7 @@ var BitBuffer = BitObject.extend('BitBuffer', {
     putPixel: function (x, y, r, g, b, a) {
         if (x < 0 || x >= this.width || y < 0 || y >= this.height) { return; }
 
-        this.data[this.dataLUT[x][y]] = a << this.ASHIFT | b << this.BSHIFT | g << this.GSHIFT | r << this.RSHIFT;
+        this.data[this.dataLUT[x][y]] = a << BitColor.ASHIFT | b << BitColor.BSHIFT | g << BitColor.GSHIFT | r << BitColor.RSHIFT;
     },
 
     /** Draws source data to render data using source-alpha blending. */
@@ -86,8 +74,8 @@ var BitBuffer = BitObject.extend('BitBuffer', {
                 by--;
                 if (bx < 0 || by < 0 || bx >= this.width || by >= this.height) { continue; }
                 offset = (dx + dy * spriteWidth);
-                if ($data[offset] >> this.ASHIFT & this.AMASK) {
-                    this.data[this.dataLUT[bx][by]] = this.blendColors($data[offset], this.data[this.dataLUT[bx][by]]) | this.AMASK;
+                if ($data[offset] >> BitColor.ASHIFT & BitColor.AMASK) {
+                    this.data[this.dataLUT[bx][by]] = this.blendColors($data[offset], this.data[this.dataLUT[bx][by]]) | BitColor.AMASK;
                 }
             }
             dy = spriteHeight;
@@ -97,9 +85,7 @@ var BitBuffer = BitObject.extend('BitBuffer', {
 
     /** Draws source data to render data forcing fixed 0xFF alpha. */
     blitNoAlpha: function (sprite, x, y) {
-        var $data = sprite.data,
-            $dataLUT = sprite.dataLUT,
-            spriteWidth = sprite.width,
+        var spriteWidth = sprite.width,
             spriteHeight = sprite.height,
             dx = spriteWidth,
             dy = spriteHeight,
@@ -111,7 +97,7 @@ var BitBuffer = BitObject.extend('BitBuffer', {
             while (dy--) {
                 by--;
                 if (bx < 0 || bx >= this.width || by < 0 || by >= this.height) { continue; }
-                this.data[this.dataLUT[bx][by]] = $data[$data.dataLUT[dx][dy]] | BitColor.AMASK;
+                this.data[this.dataLUT[bx][by]] = sprite.data[sprite.dataLUT[dx][dy]] | BitColor.AMASK;
             }
             dy = spriteHeight;
             by = y + spriteHeight;
@@ -151,7 +137,7 @@ var BitBuffer = BitObject.extend('BitBuffer', {
 
         while (bx-- > x1) {
             while (by-- > y1) {
-                this.data[this.dataLUT[bx][by]] = BitColor.blendColors(color, this.data[this.dataLUT[bx][by]]) | this.AMASK;
+                this.data[this.dataLUT[bx][by]] = BitColor.blendColors(color, this.data[this.dataLUT[bx][by]]) | BitColor.AMASK;
             }
             by = y2;
         }

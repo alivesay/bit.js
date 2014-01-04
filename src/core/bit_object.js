@@ -10,16 +10,16 @@ goog.require('bit.core.bit_noop');
 
 var BitObject = {
     mixins: null,
-    instanceID: 0,
     className: 'BitObject',
+    id: 0,
 
     generateID: function () {
-        return BitObject.id++;
+        return ++BitObject.id;
     },
 
     create: function () {
         var newObject = Object.create(this);
-        newObject.instanceID = this.generateID();
+        newObject.id = this.generateID();
         this._construct.apply(newObject, arguments);
         return newObject;
     },
@@ -75,6 +75,10 @@ var BitObject = {
         Object.defineProperties(newObject, descriptors);
 
         return newObject;
+    },
+
+    toString: function () {
+        return '[ object ' + this.className + ' ' + this.id + ' ]';
     },
 
     _construct: bit_noop,

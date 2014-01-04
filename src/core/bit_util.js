@@ -1,11 +1,25 @@
 /*jslint bitwise: true, browser: true, continue: true, nomen: true, plusplus: true, node: true */
-/*global ArrayBuffer, BitObject, Uint8Array, Uint32Array */
+/*global bit, ArrayBuffer, BitObject, Uint8Array, Uint32Array */
 /*global goog */
 
 'use strict';
 
+goog.provide('bit_namespace');
 goog.provide('bit.core.bit_noop');
 goog.provide('bit.core.BitUtil');
+
+var bit_namespace = function (parent, namespace) {
+    var ids = namespace.split('.'),
+        newNamespace = ids.shift();
+
+    if (parent[newNamespace] === undefined) {
+        parent[newNamespace] = {};
+    } else {
+        throw new Error('bit_namespace: Namespace "' + newNamespace + '" already exists.');
+    }
+
+    return ids.length > 0 ? bit_namespace(parent[newNamespace], ids.join('.')) : null;
+};
 
 var bit_noop = function () {};
 
