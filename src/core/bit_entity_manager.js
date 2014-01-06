@@ -38,10 +38,10 @@ BitObject.extend('bit.core.BitEntityManager', {
     },
 
     /** Calls tick function on each entity. */
-    tick: function (app, canvas, screen) {
+    tick: function (app, canvas, screen, layer) {
         var id;
         for (id in this.entities) {
-            app.entities[id].tick(app, canvas, screen);
+            app.entities[id].tick(app, canvas, screen, layer);
         }
     },
 
@@ -49,7 +49,7 @@ BitObject.extend('bit.core.BitEntityManager', {
     render: function (app, canvas, screen) {
         var id;
         for (id in this.entities) {
-            app.entities[id].render(app, canvas, screen);
+            app.entities[id].render(app, canvas, screen, layer);
         }
     },
 

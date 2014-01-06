@@ -24,12 +24,12 @@ BitEntity.extend('bit.core.BitScreenEntity', {
         this.velocity = BitVector2D.create(0, 0);
     },
 
-    tick: function () {
+    tick: function (app, canvas, screen, layer) {
         this.x += this.velocity.x;
         this.y += this.velocity.y;
     },
 
-    render: function (app, canvas, screen) {
+    render: function (app, canvas, screen, layer) {
         screen.blitNoAlpha(this.buffer, this.x, this.y);
     }
 }, null, [BitRectangle]);

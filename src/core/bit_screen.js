@@ -1,5 +1,5 @@
 /*jslint bitwise: true, browser: true, continue: true, nomen: true, plusplus: true, node: true */
-/*global bit, ArrayBuffer, BitBuffer, BitEntity, BitObject, BitRectangle, Uint32Array, Uint8ClampedArray */
+/*global bit, ArrayBuffer, BitBuffer, BitEntity, BitObject, BitRectangle, BitScreenLayer, Uint32Array, Uint8ClampedArray */
 /*global goog */
 
 'use strict';
@@ -10,6 +10,7 @@ goog.require('bit.core.BitBuffer');
 goog.require('bit.core.BitEntity');
 goog.require('bit.core.BitObject');
 goog.require('bit.core.BitRectangle');
+goog.require('bit.core.BitScreenLayer');
 
 BitEntity.extend('bit.core.BitScreen', {
     DEFAULT_SCREEN_ID: 'DefaultScreen',
@@ -36,6 +37,8 @@ BitEntity.extend('bit.core.BitScreen', {
         this._buffer = new ArrayBuffer(this._canvasCtxImageData.data.length);
         this._buffer8 = new Uint8ClampedArray(this._buffer);
         this.data = new Uint32Array(this._buffer);
+
+        this.addEntity(BitScreenLayer.create(BitScreenLayer.DEFAULT_LAYER_ID, width, height));
     },
 
     tick: function (app, canvas) {
@@ -53,4 +56,4 @@ BitEntity.extend('bit.core.BitScreen', {
         this._canvasCtxImageData.data.set(this._buffer8);
         this._canvasCtx.putImageData(this._canvasCtxImageData, 0, 0);
     }
-}, null, [BitRectangle, BitBuffer]);
+}, { layers: { get: function () { return this.entities; } } }, [BitRectangle, BitBuffer]);
