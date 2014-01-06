@@ -1,22 +1,24 @@
 /*jslint bitwise: true, browser: true, continue: true, nomen: true, plusplus: true, node: true */
-/*global BitEnum, BitObject */
+/*global bit, BitEnum, BitObject */
 /*global goog */
 
 'use strict';
 
-goog.provide('bit.core.BitOAssetType');
-goog.provide('bit.core.BitOAsset');
+goog.provide('bit.core.BitAssetType');
+goog.provide('bit.core.BitAsset');
+goog.require('bit.core.bit_namespace');
 goog.require('bit.core.BitObject');
 goog.require('bit.core.BitEnum');
 
-var BitAssetType = BitEnum.create([
+bit.core.BitAssetType = BitEnum.create([
     'Unknown',
     'Script',
     'Sprite',
     'TileMap'
 ]);
 
+var BitAssetType = bit.core.BitAssetType;
 
-var BitAsset = BitObject.extend({
+BitObject.extend('bit.core.BitAsset', {
     type: null
 });

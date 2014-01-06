@@ -4,26 +4,14 @@
 
 'use strict';
 
-goog.provide('bit_namespace');
 goog.provide('bit.core.bit_noop');
 goog.provide('bit.core.BitUtil');
+goog.require('bit.core.bit_namespace');
 
-var bit_namespace = function (parent, namespace) {
-    var ids = namespace.split('.'),
-        newNamespace = ids.shift();
+bit.core.bit_noop = function () {};
+var bit_noop = bit.core.bit_noop;
 
-    if (parent[newNamespace] === undefined) {
-        parent[newNamespace] = {};
-    } else {
-        throw new Error('bit_namespace: Namespace "' + newNamespace + '" already exists.');
-    }
-
-    return ids.length > 0 ? bit_namespace(parent[newNamespace], ids.join('.')) : null;
-};
-
-var bit_noop = function () {};
-
-var BitUtil = {
+bit.core.BitUtil = {
     /** Returns first index of value in array or -1. */
     arrayIndexOf: function (array, value) {
         var i, len = array.length;
@@ -48,3 +36,5 @@ var BitUtil = {
         return (buf8[0] === 0xEF);
     }
 };
+
+var BitUtil = bit.core.BitUtil;

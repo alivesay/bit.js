@@ -1,45 +1,55 @@
 /*jslint bitwise: true, browser: true, continue: true, nomen: true, plusplus: true, node: true */
-/*global BitObject, BitUtil */
+/*global bit, BitObject, BitUtil */
 /*global goog */
 
 'use strict';
 
 goog.provide('bit.core.BitEntityManager');
+goog.require('bit.core.bit_namespace');
 goog.require('bit.core.BitObject');
 goog.require('bit.core.BitUtil');
 
-var BitEntityManager = BitObject.extend('BitEntityManager', {
+
+BitObject.extend('bit.core.BitEntityManager', {
     entities: null,
 
+    _construct: function () {
+        this.entities = {};
+    },
+
     /** Adds a new entity. */
-    addEntity: function (entity, id) {
-        this.entities = this.entities || [];
-        entity.id = id || null;
+    addEntity: function (entity) {
         entity.parent = this;
-        this.entities.push(entity);
+        this.entities[entity.id] = entity;
     },
 
     /** Removes a contained entity. */
     removeEntity: function (entity) {
-        if (this.entities) {
-            BitUtil.arrayRemove(this.entities, entity);
-            entity.parent = null;
+        entity.parent = null;
+        delete this.entities[entity.id];
+    },
+
+    /** Removes a contained entity by ID. */
+    removeEntityByID: function (id) {
+        if (this.entities.hasOwnProperty(id)) {
+            this.entities[id].parent = null;
+            delete this.entities[id];
         }
     },
 
     /** Calls tick function on each entity. */
     tick: function (app, canvas, screen) {
-        var i = this.entities ? this.entities.length : 0;
-        while (i--) {
-            this.entities[i].tick(app, canvas, screen);
+        var id;
+        for (id in this.entities) {
+            app.entities[id].tick(app, canvas, screen);
         }
     },
 
     /** Calls render function on each entity. */
     render: function (app, canvas, screen) {
-        var i = this.entities ? this.entities.length : 0;
-        while (i--) {
-            this.entities[i].render(app, canvas, screen);
+        var id;
+        for (id in this.entities) {
+            app.entities[id].render(app, canvas, screen);
         }
     },
 

@@ -1,5 +1,5 @@
 /*jslint bitwise: true, browser: true, continue: true, nomen: true, plusplus: true, node: true */
-/*global BitObject */
+/*global bit, BitObject */
 /*global goog */
 
 'use strict';
@@ -7,7 +7,7 @@
 goog.provide('bit.core.BitEnum');
 goog.require('bit.core.BitObject');
 
-var BitEnum = BitObject.extend('BitEnum', {
+BitObject.extend('bit.core.BitEnum', {
     _construct: function (values) {
         var i = values.length;
 

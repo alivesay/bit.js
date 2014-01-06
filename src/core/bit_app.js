@@ -1,10 +1,12 @@
 /*jslint bitwise: true, browser: true, continue: true, nomen: true, plusplus: true, node: true */
-/*global bit_noop, BitEntityManager, BitEventNotifier, BitObject */
+/*global bit, bit_noop, BitEntityManager, BitEventNotifier, BitFPSCounter, BitObject */
 /*global goog */
 
 'use strict';
 
 goog.provide('bit.core.BitApp');
+goog.provide('bit.core.BitFPSCounter');
+goog.require('bit.core.bit_namespace');
 goog.require('bit.core.BitObject');
 goog.require('bit.core.bit_noop');
 goog.require('bit.core.BitEntityManager');
@@ -33,7 +35,26 @@ goog.require('bit.core.BitEventNotifier');
     }
 }());
 
-var BitApp = BitObject.extend('BitApp', {
+BitObject.extend('bit.core.BitFPSCounter', {
+    _now: 0,
+    _lastUpdate: Date.now(),
+    _fpsFilter: 20,
+    _thisFrameFPS: 0,
+    _delta: 0,
+
+    fps: 0,
+
+    calc: function () {
+        this._delta = ((this._now = Date.now()) - this._lastUpdate);
+        this._thisFrameFPS = this._delta ? 1000 / this._delta : 0;
+        this.fps += (this._thisFrameFPS - this.fps) / this._fpsFilter;
+        this._lastUpdate = this._now;
+
+        return this.fps;
+    }
+});
+
+BitObject.extend('bit.core.BitApp', {
     TICK_RATE: 1000 / 60,
 
     /*
@@ -48,27 +69,13 @@ var BitApp = BitObject.extend('BitApp', {
     _running: false,
     _requestAnimationFrameID: 0,
     _timeoutID: 0,
-    _fpsCounter: {
-        _now: 0,
-        _lastUpdate: Date.now(),
-        _fpsFilter: 20,
-        _thisFrameFPS: 0,
-        _delta: 0,
-
-        fps: 0,
-
-        calc: function () {
-            this._delta = ((this._now = Date.now()) - this._lastUpdate);
-            this._thisFrameFPS = this._delta ? 1000 / this._delta : 0;
-            this.fps += (this._thisFrameFPS - this.fps) / this._fpsFilter;
-            this._lastUpdate = this._now;
-        }
-    },
+    _fpsCounter: null,
 
     _construct: function (id) {
-        this.id = id;
         this._constructMixin(BitEventNotifier);
         this._constructMixin(BitEntityManager);
+        this._fpsCounter = BitFPSCounter.create();
+this.id = id;
         this.init();
     },
 
@@ -79,18 +86,18 @@ var BitApp = BitObject.extend('BitApp', {
         var self = this;
 
         if (this.running) {
-            throw new Error('bit.run: Already running');
+            throw new Error('BitApp.run: Already running');
         }
 
         this.running = true;
-        this._requestAnimationFrameID = window.requestAnimationFrame(function () { self.render(); });
-        this._timeoutID = setTimeout(function () { self.tick(); }, this.TICK_RATE);
+        this._requestAnimationFrameID = window.requestAnimationFrame(function () { self.render(self); });
+        this._timeoutID = setTimeout(function () { self.tick(self); }, this.TICK_RATE);
     },
 
     /** Stops rendering and logic tick. */
     stop: function () {
         if (!this.running) {
-            throw new Error('bit.stop: Already stopped');
+            throw new Error('BitApp.stop: Already stopped');
         }
 
         window.cancelRequestAnimationFrame(this._requestAnimationFrameID);
@@ -98,29 +105,27 @@ var BitApp = BitObject.extend('BitApp', {
         this.running = false;
     },
 
-    tick: function () {
-        var i = this.entities ? this.entities.length : 0,
-            self = this;
+    tick: function (app) {
+        var id;
 
-        while (i--) {
-            this.entities[i].tick(this);
+        for (id in app.entities) {
+            app.entities[id].tick(app);
         }
 
         this.lastTick = Date.now();
-        this._timeoutID = setTimeout(function () { self.tick(); }, this.TICK_RATE);
+        this._timeoutID = setTimeout(function () { app.tick(app); }, this.TICK_RATE);
     },
 
 
-    render: function () {
-        var i = this.entities ? this.entities.length : 0,
-            self = this;
+    render: function (app) {
+        var id;
 
         if (this.running) {
-            while (i--) {
-                this.entities[i].render(this);
+            for (id in app.entities) {
+                app.entities[id].render(app);
             }
 
-            this._requestAnimationFrameID = window.requestAnimationFrame(function () { self.render(); });
+            this._requestAnimationFrameID = window.requestAnimationFrame(function () { app.render(app); });
         }
     },
 
@@ -131,7 +136,7 @@ var BitApp = BitObject.extend('BitApp', {
     removeCanvas: function (canvas) {
         var element = document.getElementById(canvas.canvas.id);
         canvas.parentElement.removeChild(element);
-        this.removeCanvas(canvas);
+        this.removeEntity(canvas);
     }
 },
     {

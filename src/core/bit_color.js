@@ -1,14 +1,15 @@
 /*jslint bitwise: true, browser: true, continue: true, nomen: true, plusplus: true, node: true */
-/*global BitObject, BitUtil */
+/*global bit, BitObject, BitUtil */
 /*global goog */
 
 'use strict';
 
 goog.provide('bit.core.BitColor');
+goog.require('bit.core.bit_namespace');
 goog.require('bit.core.BitObject');
 goog.require('bit.core.BitUtil');
 
-var BitColor = BitObject.extend('BitColor', {
+BitObject.extend('bit.core.BitColor', {
     AMASK: 0xFF000000,
     BMASK: 0x00FF0000,
     GMASK: 0x0000FF00,

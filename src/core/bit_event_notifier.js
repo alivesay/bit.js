@@ -1,16 +1,22 @@
 /*jslint bitwise: true, browser: true, continue: true, nomen: true, plusplus: true, node: true */
-/*global BitEventHandler, BitObject, BitUtil */
+/*global bit, BitEventHandler, BitObject, BitUtil */
 /*global goog */
 
 'use strict';
 
 goog.provide('bit.core.BitEventNotifier');
+goog.require('bit.core.bit_namespace');
 goog.require('bit.core.BitEventHandler');
 goog.require('bit.core.BitObject');
 goog.require('bit.core.BitUtil');
 
-var BitEventNotifier = BitObject.extend('BitEventNotifier', {
-    _handlers: [],
+BitObject.extend('bit.core.BitEventNotifier', {
+    _handlers: null,
+
+    _construct: function () {
+        this._constructMixin(BitEventHandler);
+        this._handlers = [];
+    },
 
     addHandler: function (handler, qualifiedEventName) {
         var eventHandlers = this._handlers[qualifiedEventName] = this._handlers[event.qualifiedName] || [];

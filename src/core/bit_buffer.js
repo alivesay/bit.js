@@ -1,14 +1,15 @@
 /*jslint bitwise: true, browser: true, continue: true, nomen: true, plusplus: true, node: true */
-/*global ArrayBuffer, BitColor, BitObject, Uint32Array, Uint8ClampedArray */
+/*global bit, ArrayBuffer, BitColor, BitObject, Uint32Array, Uint8ClampedArray */
 /*global goog */
 
 'use strict';
 
 goog.provide('bit.core.BitBuffer');
+goog.require('bit.core.bit_namespace');
 goog.require('bit.core.BitColor');
 goog.require('bit.core.BitObject');
 
-var BitBuffer = BitObject.extend('BitBuffer', {
+BitObject.extend('bit.core.BitBuffer', {
     width: 0,
     height: 0,
     data: null,

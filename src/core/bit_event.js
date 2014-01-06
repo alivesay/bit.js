@@ -1,13 +1,14 @@
 /*jslint bitwise: true, browser: true, continue: true, nomen: true, plusplus: true, node: true */
-/*global BitObject */
+/*global bit, BitObject */
 /*global goog */
 
 'use strict';
 
 goog.provide('bit.core.BitEvent');
+goog.require('bit.core.bit_namespace');
 goog.require('bit.core.BitObject');
 
-var BitEvent = BitObject.extend('BitEvent', {
+BitObject.extend('bit.core.BitEvent', {
     name: null,
     type: 'BitEvent',
     notifier: null,

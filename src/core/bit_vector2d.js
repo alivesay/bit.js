@@ -1,13 +1,14 @@
 /*jslint bitwise: true, browser: true, continue: true, nomen: true, plusplus: true, node: true */
-/*global BitObject */
+/*global bit, BitObject */
 /*global goog */
 
 'use strict';
 
 goog.provide('bit.core.BitVector2D');
+goog.require('bit.core.bit_namespace');
 goog.require('bit.core.BitObject');
 
-var BitVector2D = BitObject.extend('BitVector2D', {
+BitObject.extend('bit.core.BitVector2D', {
     x: 0,
     y: 0,
 

@@ -1,15 +1,18 @@
 /*jslint bitwise: true, browser: true, continue: true, nomen: true, plusplus: true, node: true */
-/*global BitEntityManager, BitObject, BitScreen */
+/*global bit, BitEntityManager, BitObject, BitScreen */
 /*global goog */
 
 'use strict';
 
 goog.provide('bit.core.BitCanvas');
+goog.require('bit.core.bit_namespace');
 goog.require('bit.core.BitEntityManager');
 goog.require('bit.core.BitObject');
 goog.require('bit.core.BitScreen');
 
-var BitCanvas = BitObject.extend('BitCanvas', {
+BitObject.extend('bit.core.BitCanvas', {
+    DEFAULT_CANVAS_ID: 'DefaultCanvas',
+
     width: 0,
     height: 0,
     scale: 1,
@@ -17,16 +20,16 @@ var BitCanvas = BitObject.extend('BitCanvas', {
     canvasCtx: null,
     parentElement: null,
 
-    _construct: function (parentElement, width, height, scale) {
+    _construct: function (id, parentElement, width, height, scale) {
 
         this._constructMixin(BitEntityManager);
-
+this.id = id;
         this.parentElement = parentElement;
         this.width = width;
         this.height = height;
         this.scale = scale || this.scale;
 
-        this.addEntity(BitScreen.create(this.width, this.height));
+        this.addEntity(BitScreen.create(BitScreen.DEFAULT_SCREEN_ID, this.width, this.height));
 
         this.canvas = document.createElement('canvas');
         this.canvas.width = this.width * this.scale;
@@ -40,7 +43,7 @@ var BitCanvas = BitObject.extend('BitCanvas', {
             this.canvasCtx.setTransform(this.scale, 0, 0, this.scale, 0, 0);
         }
 
-        this.canvas.id = 'bit_screen_' + Date.now();
+        this.canvas.id = 'bit_screen_' + this.instanceID;
         this.parentElement.appendChild(this.canvas);
     },
 
@@ -58,17 +61,17 @@ var BitCanvas = BitObject.extend('BitCanvas', {
     },
 
     tick: function (app) {
-        var i = this.entities ? this.entities.length : 0;
-        while (i--) {
-            this.entities[i].tick(app, this);
+        var id;
+        for (id in this.entities) {
+            this.entities[id].tick(app, this);
         }
     },
 
     render: function (app) {
-        var i = this.entities ? this.entities.length : 0;
-        while (i--) {
-            this.entities[i].render(app, this);
-            this.canvasCtx.drawImage(this.entities[i].canvas, 0, 0);
+        var id;
+        for (id in this.entities) {
+            this.entities[id].render(app, this);
+            this.canvasCtx.drawImage(this.entities[id].canvas, 0, 0);
         }
     },
 

@@ -1,16 +1,19 @@
 /*jslint bitwise: true, browser: true, continue: true, nomen: true, plusplus: true, node: true */
-/*global ArrayBuffer, BitBuffer, BitEntityManager, BitObject, BitRectangle, Uint32Array, Uint8ClampedArray */
+/*global bit, ArrayBuffer, BitBuffer, BitEntity, BitObject, BitRectangle, Uint32Array, Uint8ClampedArray */
 /*global goog */
 
 'use strict';
 
 goog.provide('bit.core.BitScreen');
+goog.require('bit.core.bit_namespace');
 goog.require('bit.core.BitBuffer');
-goog.require('bit.core.BitEntityManager');
+goog.require('bit.core.BitEntity');
 goog.require('bit.core.BitObject');
 goog.require('bit.core.BitRectangle');
 
-var BitScreen = BitObject.extend('BitScreen', {
+BitObject.extend('bit.core.BitScreen', {
+    DEFAULT_SCREEN_ID: 'DefaultScreen',
+
     canvas: null,
     data: null,
 
@@ -19,11 +22,10 @@ var BitScreen = BitObject.extend('BitScreen', {
     _buffer: null,
     _buffer8: null,
 
-    _construct: function (width, height) {
+    _construct: function (id, width, height) {
         this._constructMixin(BitRectangle, [0, 0, width, height]);
-        this._constructMixin(BitEntityManager);
-        this._constructMixin(BitBuffer);
-
+        this._constructMixin(BitEntity, [id]);
+        this._constructMixin(BitBuffer, [width, height]);
         this.canvas = document.createElement('canvas');
         this.canvas.width = this.width;
         this.canvas.height = this.height;
@@ -35,19 +37,18 @@ var BitScreen = BitObject.extend('BitScreen', {
     },
 
     tick: function (app, canvas) {
-        var i = this.entities ? this.entities.length : 0;
-        while (i--) {
-            this.entities[i].tick(app, canvas, this);
+        var id;
+        for (id in this.entities) {
+            this.entities[id].tick(app, canvas, this);
         }
     },
 
     render: function (app, canvas) {
-        var i = 0;
-        while (i !== this.entities.length) {
-            this.entities[i].render(app, canvas, this);
-            i++;
+        var id;
+        for (id in this.entities) {
+            this.entities[id].render(app, canvas, this);
         }
         this._canvasCtxImageData.data.set(this._buffer8);
         this._canvasCtx.putImageData(this._canvasCtxImageData, 0, 0);
     }
-}, null, [BitRectangle, BitEntityManager, BitBuffer]);
+}, null, [BitEntity, BitRectangle, BitBuffer]);

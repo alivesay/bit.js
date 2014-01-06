@@ -1,35 +1,48 @@
 /*jslint bitwise: true, browser: true, continue: true, nomen: true, plusplus: true, node: true */
-/*global bit_noop, BitUtil */
+/*global bit, bit_global, bit_namespace, BitObject, bit_noop, BitUtil */
 /*global goog */
 
 'use strict';
 
 goog.provide('bit.core.BitObject');
+goog.require('bit.core.bit_namespace');
 goog.require('bit.core.BitUtil');
 goog.require('bit.core.bit_noop');
 
-var BitObject = {
+bit.core.BitObject = {
     mixins: null,
+    classNamespace: 'bit.core',
     className: 'BitObject',
-    id: 0,
+    instanceID: 0,
+
+    _validPropertyTypes: ['function', 'string', 'number', 'boolean'],
+    _superClass: null,
 
     generateID: function () {
-        return ++BitObject.id;
+        return ++BitObject.instanceID;
     },
 
     create: function () {
         var newObject = Object.create(this);
-        newObject.id = this.generateID();
+        newObject.instanceID = this.generateID();
         this._construct.apply(newObject, arguments);
         return newObject;
     },
 
-    extend: function (name, props, descriptors, mixins) {
-        var newObject = Object.create(this), propName, propNames, i, j;
-
+    extend: function (name, props, descriptors, mixins, addGlobal) {
+        var newObject = Object.create(this), propName, propNames, namespaces, i, j;
         descriptors = descriptors || {};
+        addGlobal = addGlobal || true;
 
-        newObject.className = name;
+        namespaces = name.split('.');
+        newObject.className = namespaces.pop();
+        if (namespaces.length > 0) {
+            bit_namespace(bit_global, namespaces.join('.'));
+            namespaces.reduce(function (obj, i) { return obj[i]; }, bit_global);
+        }
+        this.classNamespace = namespaces.join('.');
+
+        if (addGlobal) { bit_global[newObject.className] = newObject; }
 
         if (props) {
             propNames = Object.getOwnPropertyNames(props);
@@ -37,6 +50,9 @@ var BitObject = {
             while (i--) {
                 propName = propNames[i];
                 if (!descriptors.hasOwnProperty(propName)) {
+                    if (!BitObject._isValidPropertyType(props[propName])) {
+                        throw new Error('BitObject.extend: Invalid field type for property [' + propName + ']');
+                    }
                     newObject[propName] = props[propName];
                 }
             }
@@ -74,11 +90,13 @@ var BitObject = {
         }
         Object.defineProperties(newObject, descriptors);
 
+        newObject._superClass = this;
+
         return newObject;
     },
 
     toString: function () {
-        return '[ object ' + this.className + ' ' + this.id + ' ]';
+        return '[ object ' + this.className + ' ' + this.instanceID + ' ]';
     },
 
     _construct: bit_noop,
@@ -89,7 +107,19 @@ var BitObject = {
         }
     },
 
-    _super: function (obj, method, args) {
-        return Object.getPrototypeOf(obj)[method].apply(this, args);
+    _constructSuper: function (args) {
+        return this._superClass._construct(this, args);
+    },
+
+    _super: function (method, args) {
+        return this._superClass[method].apply(this, args);
+    },
+
+    _isValidPropertyType: function (property) {
+        return property === null ||
+               property === undefined ||
+               BitUtil.arrayIndexOf(BitObject._validPropertyTypes, typeof property) !== -1;
     }
 };
+
+var BitObject = bit.core.BitObject;
