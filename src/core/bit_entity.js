@@ -18,7 +18,6 @@ BitObject.extend('bit.core.BitEntity', {
     _construct: function (id) {
         this._constructMixin(BitEventHandler);
         this._constructMixin(BitEntityManager);
-
         this.id = id || this.id;
     }
 }, null, [BitEventHandler, BitEntityManager]);

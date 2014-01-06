@@ -11,7 +11,7 @@ goog.require('bit.core.BitEntity');
 goog.require('bit.core.BitObject');
 goog.require('bit.core.BitRectangle');
 
-BitObject.extend('bit.core.BitScreen', {
+BitEntity.extend('bit.core.BitScreen', {
     DEFAULT_SCREEN_ID: 'DefaultScreen',
 
     canvas: null,
@@ -23,9 +23,11 @@ BitObject.extend('bit.core.BitScreen', {
     _buffer8: null,
 
     _construct: function (id, width, height) {
+        this._constructSuper(BitEntity, [id]);
+
         this._constructMixin(BitRectangle, [0, 0, width, height]);
-        this._constructMixin(BitEntity, [id]);
         this._constructMixin(BitBuffer, [width, height]);
+
         this.canvas = document.createElement('canvas');
         this.canvas.width = this.width;
         this.canvas.height = this.height;
@@ -51,4 +53,4 @@ BitObject.extend('bit.core.BitScreen', {
         this._canvasCtxImageData.data.set(this._buffer8);
         this._canvasCtx.putImageData(this._canvasCtxImageData, 0, 0);
     }
-}, null, [BitEntity, BitRectangle, BitBuffer]);
+}, null, [BitRectangle, BitBuffer]);

@@ -16,7 +16,7 @@ BitEntity.extend('bit.core.BitScreenEntity', {
     velocity: null,
 
     _construct: function (id, buffer) {
-        this._constructSuper([id]);
+        this._constructSuper(BitEntity, [id]);
         if (buffer) {
             this._constructMixin(BitRectangle, [0, 0, buffer.width, buffer.height]);
             this.buffer = buffer;

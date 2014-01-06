@@ -15,8 +15,8 @@ bit.core.BitObject = {
     className: 'BitObject',
     instanceID: 0,
 
-    _validPropertyTypes: ['function', 'string', 'number', 'boolean'],
     _superClass: null,
+    _validPropertyTypes: ['function', 'string', 'number', 'boolean'],
 
     generateID: function () {
         return ++BitObject.instanceID;
@@ -107,12 +107,12 @@ bit.core.BitObject = {
         }
     },
 
-    _constructSuper: function (args) {
-        return this._superClass._construct(this, args);
+    _constructSuper: function (superClass, args) {
+        return this._super(superClass, '_construct', args);
     },
 
-    _super: function (method, args) {
-        return this._superClass[method].apply(this, args);
+    _super: function (superClass, method, args) {
+        return superClass[method].apply(this, args);
     },
 
     _isValidPropertyType: function (property) {
