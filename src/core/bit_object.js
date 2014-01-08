@@ -61,11 +61,15 @@ bit.core.BitObject = {
             newObject.mixins = [];
             i = mixins.length;
             while (i--) {
+                if (!BitObject._isValidMixin(mixins[i])) {
+                    throw new Error('BitObject.extend: Bad mixin [' + mixins[i].className + '] on [' + newObject.className + ']');
+                }
+
                 newObject.mixins.push(mixins[i]);
                 if (mixins[i].mixins) {
                     j = mixins[i].mixins.length;
                     while (j--) {
-                        if (BitUtil.arrayIndexOf(newObject.mixins, mixins[i].mixins[j]) === -1) {
+                        if (!BitUtil.arrayContains(newObject.mixins, mixins[i].mixins[j])) {
                             newObject.mixins.push(mixins[i].mixins[j]);
                         }
                     }
@@ -74,7 +78,7 @@ bit.core.BitObject = {
                 j = propNames.length;
                 while (j--) {
                     propName = propNames[j];
-                    if (!newObject.hasOwnProperty(propName)) {
+                    if (!newObject.hasOwnProperty(propName) && mixins[i][propName] !== null && mixins[i][propName] !== undefined) {
                         newObject[propName] = mixins[i][propName];
                     }
                 }
@@ -83,7 +87,7 @@ bit.core.BitObject = {
         if (this.mixins) {
             i = this.mixins.length;
             while (i--) {
-                if (BitUtil.arrayIndexOf(newObject.mixins, this.mixins[i]) === -1) {
+                if (!BitUtil.arrayContains(newObject.mixins, this.mixins[i])) {
                     newObject.mixins.push(this.mixins[i]);
                 }
             }
@@ -101,12 +105,6 @@ bit.core.BitObject = {
 
     _construct: bit_noop,
 
-    _constructMixin: function (mixin, args) {
-        if (BitUtil.arrayIndexOf(this.mixins, mixin) !== -1) {
-            mixin._construct.apply(this, args);
-        }
-    },
-
     _constructSuper: function (superClass, args) {
         return this._super(superClass, '_construct', args);
     },
@@ -118,7 +116,11 @@ bit.core.BitObject = {
     _isValidPropertyType: function (property) {
         return property === null ||
                property === undefined ||
-               BitUtil.arrayIndexOf(BitObject._validPropertyTypes, typeof property) !== -1;
+               BitUtil.arrayContains(BitObject._validPropertyTypes, typeof property);
+    },
+
+    _isValidMixin: function (mixin) {
+        return mixin._superClass.className === 'BitObject' && mixin._construct === bit_noop;
     }
 };
 

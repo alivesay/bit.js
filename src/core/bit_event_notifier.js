@@ -14,14 +14,13 @@ BitObject.extend('bit.core.BitEventNotifier', {
     _handlers: null,
 
     _construct: function () {
-        this._constructMixin(BitEventHandler);
         this._handlers = [];
     },
 
     addHandler: function (handler, qualifiedEventName) {
         var eventHandlers = this._handlers[qualifiedEventName] = this._handlers[event.qualifiedName] || [];
 
-        if (BitUtil.arrayIndexOf(eventHandlers, qualifiedEventName) === -1) {
+        if (!BitUtil.arrayContains(eventHandlers, qualifiedEventName)) {
             eventHandlers.push(handler);
         }
     },
@@ -38,4 +37,4 @@ BitObject.extend('bit.core.BitEventNotifier', {
             }
         }
     }
-}, null, [BitEventHandler]);
+}, null);

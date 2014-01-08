@@ -1,5 +1,5 @@
 /*jslint bitwise: true, browser: true, continue: true, nomen: true, plusplus: true, node: true */
-/*global bit, bit_noop, BitEntityManager, BitEventNotifier, BitFPSCounter, BitObject */
+/*global bit, bit_noop, BitEntityContainerMixin, BitEventNotifier, BitFPSCounter, BitObject */
 /*global goog */
 
 'use strict';
@@ -9,7 +9,7 @@ goog.provide('bit.core.BitFPSCounter');
 goog.require('bit.core.bit_namespace');
 goog.require('bit.core.BitObject');
 goog.require('bit.core.bit_noop');
-goog.require('bit.core.BitEntityManager');
+goog.require('bit.core.BitEntityContainerMixin');
 goog.require('bit.core.BitEventNotifier');
 
 (function () {
@@ -72,10 +72,8 @@ BitObject.extend('bit.core.BitApp', {
     _fpsCounter: null,
 
     _construct: function (id) {
-        this._constructMixin(BitEventNotifier);
-        this._constructMixin(BitEntityManager);
         this._fpsCounter = BitFPSCounter.create();
-this.id = id;
+
         this.init();
     },
 
@@ -109,7 +107,9 @@ this.id = id;
         var id;
 
         for (id in app.entities) {
-            app.entities[id].tick(app);
+            if (this.entities.hasOwnProperty(id)) {
+                app.entities[id].tick(app);
+            }
         }
 
         this.lastTick = Date.now();
@@ -122,7 +122,9 @@ this.id = id;
 
         if (this.running) {
             for (id in app.entities) {
-                app.entities[id].render(app);
+                if (this.entities.hasOwnProperty(id)) {
+                    app.entities[id].render(app);
+                }
             }
 
             this._requestAnimationFrameID = window.requestAnimationFrame(function () { app.render(app); });
@@ -144,4 +146,4 @@ this.id = id;
         fps: { get: function () { return this._fpsCounter.fps | 0; } }
     },
 
-    [BitEventNotifier, BitEntityManager]);
+    [BitEntityContainerMixin]);

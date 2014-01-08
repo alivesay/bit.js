@@ -1,12 +1,12 @@
 /*jslint bitwise: true, browser: true, continue: true, nomen: true, plusplus: true, node: true */
-/*global bit, BitEntityManager, BitObject, BitScreen */
+/*global bit, BitEntityContainerMixin, BitObject, BitScreen */
 /*global goog */
 
 'use strict';
 
 goog.provide('bit.core.BitCanvas');
 goog.require('bit.core.bit_namespace');
-goog.require('bit.core.BitEntityManager');
+goog.require('bit.core.BitEntityContainerMixin');
 goog.require('bit.core.BitObject');
 goog.require('bit.core.BitScreen');
 
@@ -22,8 +22,6 @@ BitObject.extend('bit.core.BitCanvas', {
 
     _construct: function (id, parentElement, width, height, scale) {
 
-        this._constructMixin(BitEntityManager);
-this.id = id;
         this.parentElement = parentElement;
         this.width = width;
         this.height = height;
@@ -63,15 +61,19 @@ this.id = id;
     tick: function (app) {
         var id;
         for (id in this.entities) {
-            this.entities[id].tick(app, this);
+            if (this.entities.hasOwnProperty(id)) {
+                this.entities[id].tick(app, this);
+            }
         }
     },
 
     render: function (app) {
         var id;
         for (id in this.entities) {
-            this.entities[id].render(app, this);
-            this.canvasCtx.drawImage(this.entities[id].canvas, 0, 0);
+            if (this.entities.hasOwnProperty(id)) {
+                this.entities[id].render(app, this);
+                this.canvasCtx.drawImage(this.entities[id].canvas, 0, 0);
+            }
         }
     },
 
@@ -82,4 +84,4 @@ this.id = id;
     removeScreen: function (screen) {
         this.removeEntity(screen);
     }
-},  { screens: { get: function () { return this.entities; } } }, [BitEntityManager]);
+},  { screens: { get: function () { return this.entities; } } }, [BitEntityContainerMixin]);

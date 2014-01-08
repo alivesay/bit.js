@@ -21,6 +21,10 @@ bit.core.BitUtil = {
         return -1;
     },
 
+    arrayContains: function (array, value) {
+        return this.arrayIndexOf(array, value) !== -1;
+    },
+
     /** Removes first occurrence of value in array if found. */
     arrayRemove: function (array, value) {
         var i = this.arrayIndexOf(array, value);
