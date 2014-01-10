@@ -13,18 +13,37 @@ bit.core.BitObject = {
     mixins: null,
     classNamespace: 'bit.core',
     className: 'BitObject',
-    instanceID: 0,
+    instanceUUID: 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx',
 
     _superClass: null,
     _validPropertyTypes: ['function', 'string', 'number', 'boolean'],
 
-    generateID: function () {
-        return ++BitObject.instanceID;
+    /**
+     * Generates an RFC4122-compliant v4 UUID.
+     * @returns {string}
+     */
+    generateUUID: function () {
+        var timestamp = Date.now(), uuid = '', i = -1, c;
+
+        while (i++ < 35) {
+            c = this.instanceUUID.charAt(i);
+            if (c === 'x') {
+                uuid += ((timestamp + Math.random() * 16) & 15).toString(16);
+            } else if (c === '-' || c === '4') {
+                uuid += c;
+            } else {
+                uuid += (((Math.random() * 16 | 0) & 0x3) | 0x08).toString(16);
+            }
+
+            timestamp >>= 2;
+        }
+
+        return uuid;
     },
 
     create: function () {
         var newObject = Object.create(this);
-        newObject.instanceID = this.generateID();
+        newObject.instanceUUID = this.generateUUID();
         this._construct.apply(newObject, arguments);
         return newObject;
     },
@@ -100,7 +119,7 @@ bit.core.BitObject = {
     },
 
     toString: function () {
-        return '[ object ' + this.className + ' ' + this.instanceID + ' ]';
+        return '[ object ' + this.className + ' ' + this.instanceUUID + ' ]';
     },
 
     _construct: bit_noop,
