@@ -13,9 +13,6 @@ goog.require('bit.core.BitRectangleMixin');
 goog.require('bit.core.BitBuffer');
 goog.require('bit.core.BitScreenLayer');
 
-
-// TODO: use array for 'layers' instead of object
-
 BitObject.extend('bit.core.BitScreen', {
     DEFAULT_SCREEN_ID: 'DefaultScreen',
 

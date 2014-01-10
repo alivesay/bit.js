@@ -1,5 +1,5 @@
 /*jslint bitwise: true, browser: true, continue: true, nomen: true, plusplus: true, node: true */
-/*global bit, BitObject, BitVector2DMixin */
+/*global bit, BitObject, BitVector2D, BitVector2DMixin */
 /*global goog */
 
 'use strict';
@@ -16,12 +16,15 @@ BitObject.extend('bit.core.BitVector2DMixin', {
     cross: function (vector) {
         return this.x * vector.y + this.y * vector.x;
     },
+
     dot: function (vector) {
         return this.x * vector.x + this.y * vector.y;
     },
+
     length: function () {
         return Math.sqrt(this.x * this.x + this.y * this.y);
     },
+
     normalize: function () {
         var normalVector = BitVector2D.create(),
             length = this.length();

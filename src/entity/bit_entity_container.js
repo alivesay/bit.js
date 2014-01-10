@@ -4,8 +4,8 @@
 
 'use strict';
 
-goog.provide('bit.core.BitEntityContainer');
-goog.provide('bit.core.BitEntityContainerMixin');
+goog.provide('bit.entity.BitEntityContainer');
+goog.provide('bit.entity.BitEntityContainerMixin');
 goog.require('bit.core.bit_namespace');
 goog.require('bit.core.BitObject');
 goog.require('bit.core.BitUtil');

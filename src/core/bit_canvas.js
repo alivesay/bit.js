@@ -45,19 +45,6 @@ BitObject.extend('bit.core.BitCanvas', {
         this.parentElement.appendChild(this.canvas);
     },
 
-    _swapBuffer: function () {
-        this._postProcess();
-
-        if (this.scale > 1) {
-            this.backBufferCtx.putImageData(this.backBufferCtxImageData, 0, 0);
-            this._overlay();
-            this.canvasCtx.drawImage(this.backBufferCanvas, 0, 0);
-        } else {
-            this.canvasCtx.putImageData(this.backBufferCtxImageData, 0, 0);
-            this._overlay();
-        }
-    },
-
     tick: function (app) {
         var id;
         for (id in this.entities) {

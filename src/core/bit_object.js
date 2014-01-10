@@ -125,3 +125,4 @@ bit.core.BitObject = {
 };
 
 var BitObject = bit.core.BitObject;
+
