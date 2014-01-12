@@ -6,11 +6,12 @@
 
 goog.provide('bit.core.BitScreenEntity');
 goog.require('bit.core.bit_namespace');
-goog.require('bit.core.BitEntity');
 goog.require('bit.core.BitRectangleMixin');
 goog.require('bit.core.BitVector2D');
+goog.require('bit.entity.BitEntity');
 
 // TODO: can contain entities?
+// TODO: remove all entity references from core classes
 
 BitEntity.extend('bit.core.BitScreenEntity', {
     buffer: null,

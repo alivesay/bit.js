@@ -6,9 +6,9 @@
 
 goog.provide('bit.core.BitScreenLayer');
 goog.require('bit.core.bit_namespace');
-goog.require('bit.core.BitEntityContainerMixin');
 goog.require('bit.core.BitRectangle');
 goog.require('bit.core.BitVector2D');
+goog.require('bit.entity.BitEntityContainerMixin');
 
 BitObject.extend('bit.core.BitScreenLayer', {
     DEFAULT_LAYER_ID: "DefaultLayer",

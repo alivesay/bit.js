@@ -36,6 +36,7 @@ BitObject.extend('bit.core.BitEntityManager', {
         throw new Error('BitEntityManager.createEntityID: No entity IDs available');
     },
 
+    // TODO: use entity object pool
     createEntity: function () {
         var id = this.generateEntityID(),
             entity = BitEntity.create(id, this);
@@ -67,11 +68,11 @@ BitObject.extend('bit.core.BitEntityManager', {
         return this;
     },
 
-    mapEntityComponent: function (id, className) {
+    mapComponentEntity: function (id, className) {
         this._componentEntityClassMap[className][id] = this._components[className];
     },
 
-    unmapEntityComponent: function (id, className) {
+    unmapComponentEntity: function (id, className) {
         delete this._componentEntityClassMap[className][id];
     },
 

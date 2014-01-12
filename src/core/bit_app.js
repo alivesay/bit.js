@@ -9,8 +9,8 @@ goog.provide('bit.core.BitFPSCounter');
 goog.require('bit.core.bit_namespace');
 goog.require('bit.core.BitObject');
 goog.require('bit.core.bit_noop');
-goog.require('bit.core.BitEntityContainerMixin');
 goog.require('bit.core.BitEventNotifier');
+goog.require('bit.entity.BitEntityContainerMixin');
 
 (function () {
     if (!window.requestAnimationFrame) {

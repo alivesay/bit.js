@@ -8,10 +8,10 @@
 goog.provide('bit.core.BitScreen');
 goog.require('bit.core.bit_namespace');
 goog.require('bit.core.BitObject');
-goog.require('bit.core.BitEntityContainerMixin');
 goog.require('bit.core.BitRectangleMixin');
 goog.require('bit.core.BitBuffer');
 goog.require('bit.core.BitScreenLayer');
+goog.require('bit.entity.BitEntityContainerMixin');
 
 BitObject.extend('bit.core.BitScreen', {
     DEFAULT_SCREEN_ID: 'DefaultScreen',

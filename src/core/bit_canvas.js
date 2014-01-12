@@ -6,9 +6,9 @@
 
 goog.provide('bit.core.BitCanvas');
 goog.require('bit.core.bit_namespace');
-goog.require('bit.core.BitEntityContainerMixin');
 goog.require('bit.core.BitObject');
 goog.require('bit.core.BitScreen');
+goog.require('bit.entity.BitEntityContainerMixin');
 
 BitObject.extend('bit.core.BitCanvas', {
     DEFAULT_CANVAS_ID: 'DefaultCanvas',
