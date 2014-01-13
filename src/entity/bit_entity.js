@@ -24,14 +24,14 @@ BitObject.extend('bit.core.BitEntity', {
     },
 
     addComponent: function (component) {
-        this.components[component.className] = component;
-        this._entityManager.mapComponentEntity(this.id, component.className);
+        this.components[component._className] = component;
+        this._entityManager.mapComponentEntity(this.id, component._className);
         return this;
     },
 
     removeComponent: function (component) {
-        delete this.components[component.className];
-        this._entityManager.unmapComponentEntity(this.id, component.className);
+        delete this.components[component._className];
+        this._entityManager.unmapComponentEntity(this.id, component._className);
         return this;
     },
 

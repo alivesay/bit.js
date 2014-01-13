@@ -1,41 +1,58 @@
 /*jslint bitwise: true, browser: true, continue: true, nomen: true, plusplus: true, node: true */
-/*global bit, bit_global, bit_namespace, BitObject, BitObjectPoolManager, BitObjectPoolMemberMixin, bit_noop, BitUtil */
+/*global bit, bit_global, bit_namespace, bit_object_pool, BitObject, BitObjectPool, BitObjectPoolMemberMixin, bit_noop, BitUtil */
 /*global goog */
 
 'use strict';
 
 goog.provide('bit.core.BitObject');
+goog.provide('bit.core.BitObjectPoolManager');
+goog.provide('bit.core.BitObjectPool');
 goog.provide('bit.core.BitObjectPoolMemberMixin');
 goog.require('bit.core.bit_namespace');
 goog.require('bit.core.BitUtil');
 goog.require('bit.core.bit_noop');
 
 bit.core.BitObject = {
-    mixins: null,
-    classNamespace: 'bit.core',
-    className: 'BitObject',
-    instanceUUID: null,
-
+    _mixins: null,
+    _classNamespace: 'bit.core',
+    _className: 'BitObject',
+    _instanceUUID: null,
     _superClass: null,
-    _validPropertyTypes: ['function', 'string', 'number', 'boolean'],
+    _validPropertyValueTypes: ['function', 'string', 'number', 'boolean'],
+    _uuidHexChars: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'],
+    _uuidPattern: 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx',
+
+    _construct: bit_noop,
+
+    _constructSuper: function (superClass, args) {
+        return this._super(superClass, '_construct', args);
+    },
+
+    _super: function (superClass, method, args) {
+        return superClass[method].apply(this, args);
+    },
+
+    _isValidPropertyType: function (property) {
+        return property === null ||
+            property === undefined ||
+            BitUtil.arrayContains(BitObject._validPropertyValueTypes, typeof property);
+    },
 
     /**
      * Generates an RFC4122-compliant v4 UUID.
      * @returns {string}
      */
     generateUUID: function () {
-        var timestamp = Date.now(), uuid = '', i = 36, c,
-            hexChars = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'],
-            uuidPattern = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx';
+        var timestamp = Date.now(), uuid = '', i = 36, c;
 
         while (i--) {
-            c = uuidPattern.charAt(i);
+            c = this._uuidPattern.charAt(i);
             if (c === 'x') {
-                uuid = hexChars[(timestamp + Math.random() * 0xFF & 15)] + uuid;
+                uuid = this._uuidHexChars[(timestamp + Math.random() * 0xFF & 15)] + uuid;
             } else if (c === '-' || c === '4') {
                 uuid = c + uuid;
             } else {
-                uuid = hexChars[(Math.random() * 4 + 8 | 0)] + uuid;
+                uuid = this._uuidHexChars[(Math.random() * 4 + 8 | 0)] + uuid;
             }
 
             timestamp >>= 2;
@@ -47,13 +64,13 @@ bit.core.BitObject = {
     create: function () {
         var object;
 
-        if (BitObjectPoolManager.isPoolableObject(this)) {
-            object = BitObjectPoolManager.create?;
-        } else {
-            object = Object.create(this);
-            object.instanceUUID = this.generateUUID();
-            this._construct.apply(object, arguments);
+        if (BitObjectPool.isPoolableObject(this)) {
+            return bit_object_pool.alloc(this, arguments);
         }
+
+        object = Object.create(this);
+        object._instanceUUID = this.generateUUID();
+        this._construct.apply(object, arguments);
 
         return object;
     },
@@ -64,14 +81,14 @@ bit.core.BitObject = {
         addGlobal = addGlobal || true;
 
         namespaces = name.split('.');
-        newObject.className = namespaces.pop();
+        newObject._className = namespaces.pop();
         if (namespaces.length > 0) {
             bit_namespace(bit_global, namespaces.join('.'));
             namespaces.reduce(function (obj, i) { return obj[i]; }, bit_global);
         }
-        this.classNamespace = namespaces.join('.');
+        this._classNamespace = namespaces.join('.');
 
-        if (addGlobal) { bit_global[newObject.className] = newObject; }
+        if (addGlobal) { bit_global[newObject._className] = newObject; }
 
         if (props) {
             propNames = Object.getOwnPropertyNames(props);
@@ -87,19 +104,19 @@ bit.core.BitObject = {
             }
         }
         if (mixins) {
-            newObject.mixins = [];
+            newObject._mixins = [];
             i = mixins.length;
             while (i--) {
                 if (!BitObject._isValidMixin(mixins[i])) {
-                    throw new Error('BitObject.extend: Bad mixin [' + mixins[i].className + '] on [' + newObject.className + ']');
+                    throw new Error('BitObject.extend: Bad mixin [' + mixins[i]._className + '] on [' + newObject._className + ']');
                 }
 
-                newObject.mixins.push(mixins[i]);
-                if (mixins[i].mixins) {
-                    j = mixins[i].mixins.length;
+                newObject._mixins.push(mixins[i]);
+                if (mixins[i]._mixins) {
+                    j = mixins[i]._mixins.length;
                     while (j--) {
-                        if (!BitUtil.arrayContains(newObject.mixins, mixins[i].mixins[j])) {
-                            newObject.mixins.push(mixins[i].mixins[j]);
+                        if (!BitUtil.arrayContains(newObject._mixins, mixins[i]._mixins[j])) {
+                            newObject._mixins.push(mixins[i]._mixins[j]);
                         }
                     }
                 }
@@ -113,11 +130,11 @@ bit.core.BitObject = {
                 }
             }
         }
-        if (this.mixins) {
-            i = this.mixins.length;
+        if (this._mixins) {
+            i = this._mixins.length;
             while (i--) {
-                if (!BitUtil.arrayContains(newObject.mixins, this.mixins[i])) {
-                    newObject.mixins.push(this.mixins[i]);
+                if (!BitUtil.arrayContains(newObject._mixins, this._mixins[i])) {
+                    newObject._mixins.push(this._mixins[i]);
                 }
             }
         }
@@ -129,31 +146,15 @@ bit.core.BitObject = {
     },
 
     toString: function () {
-        return '[ object ' + this.className + ' ' + this.instanceUUID + ' ]';
-    },
-
-    _construct: bit_noop,
-
-    _constructSuper: function (superClass, args) {
-        return this._super(superClass, '_construct', args);
-    },
-
-    _super: function (superClass, method, args) {
-        return superClass[method].apply(this, args);
-    },
-
-    _isValidPropertyType: function (property) {
-        return property === null ||
-               property === undefined ||
-               BitUtil.arrayContains(BitObject._validPropertyTypes, typeof property);
+        return '[ object ' + this._className + ' ' + this._instanceUUID + ' ]';
     },
 
     _isValidMixin: function (mixin) {
-        return mixin._superClass.className === 'BitObject' && mixin._construct === bit_noop;
+        return mixin._superClass._className === 'BitObject' && mixin._construct === bit_noop;
     },
 
     pureVirtualFunction: function (name) {
-        return function (name) { throw new Error(this.className + '.' + name + ': Missing implementation'); };
+        return function (name) { throw new Error(this._className + '.' + name + ': Missing implementation'); };
     },
 
     hasOwnProperties: function (props) {
@@ -164,57 +165,67 @@ bit.core.BitObject = {
     },
 
     hasAllPropertiesOf: function (object) {
-        return this.hasOwnProperties(BitObject.getOwnPropertyNames(object));
+        return this.hasOwnProperties(Object.getOwnPropertyNames(object));
     }
 };
 
-bit.core.BitObject.instanceUUID = bit.core.BitObject.generateUUID();
+(function () {
+    Object.defineProperties(bit.core.BitObject, {
+        'classNamespace': { get: function () { return this._classNamespace; }, enumerable: true },
+        'className': { get:  function () { return this._className; }, enumerable: true },
+        'instanceUUID': { get: function () { return this._instanceUUID; }, enumerable: true },
+        'superClass': { get: function () { return this._superClass; }, enumerable: true }
+    });
+    bit.core.BitObject._instanceUUID = bit.core.BitObject.generateUUID();
+}());
+
 var BitObject = bit.core.BitObject;
 
 BitObject.extend('bit.core.BitObjectPoolMemberMixin', {
-    poolGetInitialSize: BitObject.pureVirtualFunction('poolGetInitialSize'),
-    poolCreate: BitObject.pureVirtualFunction('poolCreate')
+    release: BitObject.pureVirtualFunction('release')
 });
 
 BitObject.extend('bit.core.BitObjectPool', {
-
-});
-
-BitObject.extend('bit.core.BitObjectPoolManager', {
-    _pools: null,
+    _classPools: null,
 
     _construct: function () {
-        this.pools = [];
+        this._classPools = {};
     },
 
-    allocate: function (object, args) {
+    alloc: function (object, args) {
+        var obj, className;
 
+        className = object.className;
+
+        if (this._classPools[className] === undefined) {
+            this._classPools[className] = [];
+        }
+
+        if (this._classPools[className].length > 0) {
+            obj = this._pools[className].pop();
+            if (args === undefined) {
+                obj._construct();
+            } else {
+                obj._construct.apply(obj, args);
+            }
+            return obj;
+        }
+
+        return ((args === undefined) ? object.create() : object.create.apply(object, args));
     },
 
     free: function (object) {
-        // should objects stay in pool, or be popped out for use? pushed in to free?...
-        // what happens when pool is empty?
+        object.release();
+        this._pools[object.className].push(object);
     },
 
-    removeObjectFromPool: function (object) {
-        delete this.pools[object.className][object.instanceUUID];
+    collect: function () {
+        this._pools = {};
     },
 
-    createPool: function (classObject, args) {
-        var pool, i;
-
-        if (this.pools[classObject.className] !== undefined) {
-            throw new Error('BitObjectPoolManager.createPool: Pool already exists for ' + classObject.className);
-        }
-
-        pool = this.pools[classObject.className] = [];
-        i = pool.length = classObject.poolGetInitialSize();
-        while (i--) {
-            pool[i] = (args === undefined) ? classObject.create() : classObject.apply(classObject, args);
-        }
-    },
-
-    isPoolableObject: function (classObject) {
-        return BitObject.isPrototypeOf(classObject) && classObject.hasAllPropertiesOf(BitObjectPoolMemberMixin);
+    isPoolableObject: function (object) {
+        return BitObject.isPrototypeOf(object) && object.hasAllPropertiesOf(BitObjectPoolMemberMixin);
     }
 });
+
+var bit_object_pool = BitObjectPool.create();

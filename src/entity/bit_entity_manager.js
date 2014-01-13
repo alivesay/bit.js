@@ -51,19 +51,19 @@ BitObject.extend('bit.core.BitEntityManager', {
     },
 
     registerComponent: function (component) {
-        if (this._components[component.className] === undefined) {
-            throw new Error('BitEntityManager.registerComponent: Component ' + component.className + ' already exists');
+        if (this._components[component._className] === undefined) {
+            throw new Error('BitEntityManager.registerComponent: Component ' + component._className + ' already exists');
         }
 
-        this._components[component.className] = component;
-        this._componentEntityClassMap[component.className] = {};
+        this._components[component._className] = component;
+        this._componentEntityClassMap[component._className] = {};
 
         return this;
     },
 
     deregisterComponent: function (component) {
-        delete this._components[component.className];
-        delete this._componentEntityClassMap[component.className];
+        delete this._components[component._className];
+        delete this._componentEntityClassMap[component._className];
 
         return this;
     },
