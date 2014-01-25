@@ -19,7 +19,7 @@ bit.core.BitObject = {
     _instanceUUID: null,
     _superClass: null,
     _validPropertyValueTypes: ['function', 'string', 'number', 'boolean'],
-    _uuidHexChars: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'],
+    _uuidHexChars: '0123456789abcdef',
     _uuidPattern: 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx',
 
     _construct: bit_noop,
@@ -34,8 +34,12 @@ bit.core.BitObject = {
 
     _isValidPropertyType: function (property) {
         return property === null ||
-            property === undefined ||
-            BitUtil.arrayContains(BitObject._validPropertyValueTypes, typeof property);
+               property === undefined ||
+               BitUtil.arrayContains(BitObject._validPropertyValueTypes, typeof property);
+    },
+
+    _isValidMixin: function (mixin) {
+        return mixin._superClass.className === 'BitObject' && mixin._construct === bit_noop;
     },
 
     /**
@@ -48,11 +52,11 @@ bit.core.BitObject = {
         while (i--) {
             c = this._uuidPattern.charAt(i);
             if (c === 'x') {
-                uuid = this._uuidHexChars[(timestamp + Math.random() * 0xFF & 15)] + uuid;
+                uuid = this._uuidHexChars.charAt(timestamp + Math.random() * 0xFF & 15) + uuid;
             } else if (c === '-' || c === '4') {
                 uuid = c + uuid;
             } else {
-                uuid = this._uuidHexChars[(Math.random() * 4 + 8 | 0)] + uuid;
+                uuid = this._uuidHexChars.charAt((Math.random() * 4 + 8 | 0)) + uuid;
             }
 
             timestamp >>= 2;
@@ -124,7 +128,7 @@ bit.core.BitObject = {
                 j = propNames.length;
                 while (j--) {
                     propName = propNames[j];
-                    if (!newObject.hasOwnProperty(propName) && mixins[i][propName] !== null && mixins[i][propName] !== undefined) {
+                    if (!newObject.hasOwnProperty(propName) && mixins[i][propName] !== undefined) {
                         newObject[propName] = mixins[i][propName];
                     }
                 }
@@ -149,10 +153,6 @@ bit.core.BitObject = {
         return '[ object ' + this._className + ' ' + this._instanceUUID + ' ]';
     },
 
-    _isValidMixin: function (mixin) {
-        return mixin._superClass._className === 'BitObject' && mixin._construct === bit_noop;
-    },
-
     pureVirtualFunction: function (name) {
         return function (name) { throw new Error(this._className + '.' + name + ': Missing implementation'); };
     },
@@ -169,15 +169,16 @@ bit.core.BitObject = {
     }
 };
 
-(function () {
-    Object.defineProperties(bit.core.BitObject, {
+// TODO: do these really need to be enumerable?
+(function (self) {
+    Object.defineProperties(self, {
         'classNamespace': { get: function () { return this._classNamespace; }, enumerable: true },
         'className': { get:  function () { return this._className; }, enumerable: true },
         'instanceUUID': { get: function () { return this._instanceUUID; }, enumerable: true },
         'superClass': { get: function () { return this._superClass; }, enumerable: true }
     });
-    bit.core.BitObject._instanceUUID = bit.core.BitObject.generateUUID();
-}());
+    self._instanceUUID = bit.core.BitObject.generateUUID();
+}(bit.core.BitObject));
 
 var BitObject = bit.core.BitObject;
 

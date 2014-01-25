@@ -6,20 +6,15 @@
 
 goog.provide('bit.core.BitScreenLayer');
 goog.require('bit.core.bit_namespace');
-goog.require('bit.core.BitRectangle');
-goog.require('bit.core.BitVector2D');
 goog.require('bit.entity.BitEntityContainerMixin');
+goog.require('bit.core.BitRectangleMixin');
 
 BitObject.extend('bit.core.BitScreenLayer', {
-    DEFAULT_LAYER_ID: "DefaultLayer",
-
-    id: null,
     parallax: 0,
 
-    _construct: function (id, width, height) {
-        this.id = id;
-        this.width = width;
-        this.height = height;
+    _construct: function (width, height) {
+        this.setWidth(width || this.getWidth());
+        this.setHeight(height || this.getHeight());
     },
 
     tick: function (app, canvas, screen) {

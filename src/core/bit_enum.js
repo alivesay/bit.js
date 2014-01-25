@@ -13,8 +13,8 @@ BitObject.extend('bit.core.BitEnum', {
 
         while (i--) {
             Object.defineProperty(this, values[i], {
-                value: i | 0,
-                enumerable: false,
+                value: i >>> 0,
+                enumerable: true,
                 configurable: false,
                 writable: false
             });

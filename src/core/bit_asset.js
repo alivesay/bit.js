@@ -11,10 +11,10 @@ goog.require('bit.core.BitObject');
 goog.require('bit.core.BitEnum');
 
 bit.core.BitAssetType = BitEnum.create([
-    'Unknown',
-    'Script',
-    'Sprite',
-    'TileMap'
+    'UNKNOWN',
+    'SCRIPT',
+    'SPRITE',
+    'TILEMAP'
 ]);
 
 var BitAssetType = bit.core.BitAssetType;

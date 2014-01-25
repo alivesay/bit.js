@@ -10,35 +10,64 @@ goog.require('bit.core.bit_namespace');
 goog.require('bit.core.BitObject');
 
 BitObject.extend('bit.core.BitVector2DMixin', {
-    x: 0,
-    y: 0,
+    _x: 0,
+    _y: 0,
+
+    getX: function () {
+        return this._x;
+    },
+
+    setX: function (x) {
+        this._x = x;
+    },
+
+    getY: function () {
+        return this._y;
+    },
+
+    setY: function (y) {
+        this._y = y;
+    },
 
     cross: function (vector) {
-        return this.x * vector.y + this.y * vector.x;
+        return this.getX() * vector.getY() + this.getY() * vector.getX();
     },
 
     dot: function (vector) {
-        return this.x * vector.x + this.y * vector.y;
+        return this.getX() * vector.getX() + this.getY() * vector.getY();
     },
 
     length: function () {
-        return Math.sqrt(this.x * this.x + this.y * this.y);
+        return Math.sqrt(this.getX() * this.getX() + this.getY() * this.getY());
     },
 
     normalize: function () {
         var normalVector = BitVector2D.create(),
             length = this.length();
         if (length > 0) {
-            normalVector.x /= length;
-            normalVector.y /= length;
+            normalVector.setX(normalVector.getX() / length);
+            normalVector.setY(normalVector.getY() / length);
         }
         return normalVector;
+    },
+
+    invertX: function () {
+        this.setX(-this.getX());
+    },
+
+    invertY: function () {
+        this.setY(-this.getY());
+    },
+
+    invert: function () {
+        this.invertX();
+        this.invertY();
     }
 });
 
 BitObject.extend('bit.core.BitVector2D', {
     _construct: function (x, y) {
-        this.x = x || this.x;
-        this.y = y || this.y;
+        this.setX(x || this.getX());
+        this.setY(y || this.getY());
     }
 }, null, [BitVector2DMixin]);

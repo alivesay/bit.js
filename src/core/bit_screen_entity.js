@@ -22,19 +22,19 @@ BitEntity.extend('bit.core.BitScreenEntity', {
         this._constructSuper(BitEntity, [id]);
 
         if (buffer) {
-            this.width = buffer.width;
-            this.height = buffer.height;
+            this.setWidth(buffer.getWidth());
+            this.setHeight(buffer.getHeight());
             this.buffer = buffer;
         }
         this.velocity = BitVector2D.create(0, 0);
     },
 
     tick: function (app, canvas, screen, layer) {
-        this.x += this.velocity.x;
-        this.y += this.velocity.y;
+        this.x += this.velocity.getX();
+        this.y += this.velocity.getY();
     },
 
     render: function (app, canvas, screen, layer) {
-        screen.buffer.blitNoAlpha(this.buffer, this.x, this.y);
+        screen.buffer.blitNoAlpha(this.buffer, this.getX(), this.getY());
     }
 }, null, [BitRectangleMixin]);

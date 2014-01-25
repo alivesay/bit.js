@@ -1,5 +1,5 @@
 /*jslint bitwise: true, browser: true, continue: true, nomen: true, plusplus: true, node: true */
-/*global bit, BitEntityContainerMixin, BitObject, BitScreen */
+/*global bit, BitColor, BitDimensions, BitDimensionsMixin, BitObject, BitScreen, BitUtil */
 /*global goog */
 
 'use strict';
@@ -8,67 +8,115 @@ goog.provide('bit.core.BitCanvas');
 goog.require('bit.core.bit_namespace');
 goog.require('bit.core.BitObject');
 goog.require('bit.core.BitScreen');
-goog.require('bit.entity.BitEntityContainerMixin');
+goog.require('bit.core.BitColor');
+goog.require('bit.core.BitUtil');
+goog.require('bit.core.BitDimensions');
+
+// TODO: z-order sorting on screens, only 2d contexts would need this. also need a bringToFront().
 
 BitObject.extend('bit.core.BitCanvas', {
-    DEFAULT_CANVAS_ID: 'DefaultCanvas',
+    _backgroundColor: null,
+    _scale: 1,
+    _canvas: null,
+    _canvasCtx: null,
+    _canvasCtxImgData: null,
+    _parentElement: null,
+    _screens: null,
 
-    width: 0,
-    height: 0,
-    scale: 1,
-    canvas: null,
-    canvasCtx: null,
-    parentElement: null,
+    _construct: function (width, height, scale) {
+        this._super(BitDimensions, 'setWidth', [width || this.getWidth()]);
+        this._super(BitDimensions, 'setHeight', [height || this.getHeight()]);
+        this._scale = scale || this._scale;
 
-    _construct: function (id, parentElement, width, height, scale) {
+        this._canvas = document.createElement('canvas');
+        this._canvas.id = 'bit_canvas_' + this.instanceUUID;
+        this._canvasCtx = this._canvas.getContext('2d');
+        this._resizeCanvas(this.getWidth(), this.getHeight(), scale);
+        this.setSmoothingEnabled(false);
 
-        this.parentElement = parentElement;
-        this.width = width;
-        this.height = height;
-        this.scale = scale || this.scale;
+        this.setBackgroundColor(BitColor.create());
 
-        this.addEntity(BitScreen.create(BitScreen.DEFAULT_SCREEN_ID, this.width, this.height));
+        this._screens = [];
+        this.addScreen(BitScreen.create(this.getWidth(), this.getHeight()));
+    },
 
-        this.canvas = document.createElement('canvas');
-        this.canvas.width = this.width * this.scale;
-        this.canvas.height = this.height * this.scale;
-        //this.canvas.style.backgroundColor = 'rgb(0,0,0)';
-        this.canvasCtx = this.canvas.getContext('2d');
-        this.canvasCtx.imageSmoothingEnabled = false;
-        this.canvasCtx.webkitImageSmoothingEnabled = false;
-        this.canvasCtx.mozImageSmoothingEnabled = false;
-        if (this.scale > 1) {
-            this.canvasCtx.setTransform(this.scale, 0, 0, this.scale, 0, 0);
-        }
+    _resizeCanvas: function (width, height, scale) {
+        this._canvas.width = width * scale;
+        this._canvas.height = height * scale;
 
-        this.canvas.id = 'bit_screen_' + this.instanceID;
-        this.parentElement.appendChild(this.canvas);
+        this._canvasCtxImgData = this._canvasCtx.getImageData(0, 0, width, height);
+
+        this._canvasCtx.setTransform(scale, 0, 0, scale, 0, 0);
+    },
+
+    setWidth: function (width) {
+        this._super(BitDimensions, 'setWidth', [width || this.getWidth()]);
+        this._resizeCanvas(width, this.getHeight(), this._scale);
+    },
+
+    setHeight: function (height) {
+        this._super(BitDimensions, 'setHeight', [height || this.getHeight()]);
+        this._resizeCanvas(this.getWidth(), height, this._scale);
     },
 
     tick: function (app) {
-        var id;
-        for (id in this.entities) {
-            if (this.entities.hasOwnProperty(id)) {
-                this.entities[id].tick(app, this);
-            }
+        var i;
+        for (i = 0; i < this._screens.length; i++) {
+            this._screens[i].tick(app, this);
         }
     },
 
     render: function (app) {
-        var id;
-        for (id in this.entities) {
-            if (this.entities.hasOwnProperty(id)) {
-                this.entities[id].render(app, this);
-                this.canvasCtx.drawImage(this.entities[id].canvas, 0, 0);
-            }
+        var i;
+
+        this._canvasCtx.fillRect(0, 0, this.getWidth(), this.getHeight(), this._backgroundColor.getRGBACSSString());
+
+        for (i = 0; i < this._screens.length; i++) {
+            this._screens[i].render(app, this);
+            this._canvasCtx.drawImage(this._screens[i]._canvas, this._screens[i].getX(), this._screens[i].getY());
         }
     },
 
     addScreen: function (screen) {
-        this.addEntity(screen);
+        this._screens.push(screen);
     },
 
     removeScreen: function (screen) {
-        this.removeEntity(screen);
+        BitUtil.arrayRemove(this._screens, screen);
+    },
+
+    getBackgroundColor: function () {
+        return this._backgroundColor;
+    },
+
+    setBackgroundColor: function (color) {
+        this._backgroundColor = color;
+        this._canvas.style.backgroundColor = this._backgroundColor.getRGBACSSString();
+    },
+
+    getScreens: function () {
+        return this._screens;
+    },
+
+    getParentElement: function () {
+        return this._parentElement;
+    },
+
+    setParentElement: function (element) {
+        if (this._parentElement) {
+            this._parentElement.removeChild(this._canvas.id);
+        }
+
+        if (element) {
+            element.appendChild(this._canvas);
+        }
+
+        this._parentElement = element;
+    },
+
+    setSmoothingEnabled: function (value) {
+        this._canvasCtx.imageSmoothingEnabled = value;
+        this._canvasCtx.webkitImageSmoothingEnabled = value;
+        this._canvasCtx.mozImageSmoothingEnabled = value;
     }
-},  { screens: { get: function () { return this.entities; } } }, [BitEntityContainerMixin]);
+}, null, [BitDimensionsMixin]);

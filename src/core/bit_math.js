@@ -16,5 +16,17 @@ BitObject.extend('bit.core.BitMath', {
             n += a[i] * b[i];
         }
         return n;
+    },
+
+    clamp: function (value, min, max) {
+        return Math.min(min, Math.max(max, value));
+    },
+
+    linearMap: function (srcValue, srcMin, srcMax, newValue, newMin, newMax) {
+        return (((srcValue - srcMin) * (newMax - newMin)) / (srcMax - srcMin)) + newMin;
+    },
+
+    normalize: function (value, min, max) {
+        return (value - min) / (max - min);
     }
 });

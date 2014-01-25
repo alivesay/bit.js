@@ -1,5 +1,5 @@
 /*jslint bitwise: true, browser: true, continue: true, nomen: true, plusplus: true, node: true */
-/*global bit, bit_noop, BitEntityContainerMixin, BitEventNotifier, BitFPSCounter, BitObject */
+/*global bit, bit_noop, BitEventNotifier, BitFPSCounter, BitObject, BitUtil */
 /*global goog */
 
 'use strict';
@@ -10,7 +10,6 @@ goog.require('bit.core.bit_namespace');
 goog.require('bit.core.BitObject');
 goog.require('bit.core.bit_noop');
 goog.require('bit.core.BitEventNotifier');
-goog.require('bit.entity.BitEntityContainerMixin');
 
 (function () {
     if (!window.requestAnimationFrame) {
@@ -63,17 +62,16 @@ BitObject.extend('bit.core.BitApp', {
      pixelShader: bit_noop,
      */
     lastTick: Date.now(),
-    running: false,
 
-    _initialized: false,
     _running: false,
     _requestAnimationFrameID: 0,
     _timeoutID: 0,
     _fpsCounter: null,
+    _canvases: null,
 
     _construct: function (id) {
         this._fpsCounter = BitFPSCounter.create();
-
+        this._canvases = [];
         this.init();
     },
 
@@ -83,67 +81,66 @@ BitObject.extend('bit.core.BitApp', {
     start: function () {
         var self = this;
 
-        if (this.running) {
+        if (this._running) {
             throw new Error('BitApp.run: Already running');
         }
 
-        this.running = true;
+        this._running = true;
         this._requestAnimationFrameID = window.requestAnimationFrame(function () { self.render(self); });
         this._timeoutID = setTimeout(function () { self.tick(self); }, this.TICK_RATE);
     },
 
     /** Stops rendering and logic tick. */
     stop: function () {
-        if (!this.running) {
+        if (!this._running) {
             throw new Error('BitApp.stop: Already stopped');
         }
 
         window.cancelRequestAnimationFrame(this._requestAnimationFrameID);
         clearTimeout(this._timeoutID);
-        this.running = false;
+        this._running = false;
     },
 
     tick: function (app) {
-        var id;
+        var i;
 
-        for (id in app.entities) {
-            if (this.entities.hasOwnProperty(id)) {
-                app.entities[id].tick(app);
+        if (this._running) {
+            for (i = 0; i < this._canvases.length; i++) {
+                app._canvases[i].tick(app);
             }
         }
 
         this.lastTick = Date.now();
         this._timeoutID = setTimeout(function () { app.tick(app); }, this.TICK_RATE);
+
     },
 
-
     render: function (app) {
-        var id;
+        var i;
 
-        if (this.running) {
-            for (id in app.entities) {
-                if (this.entities.hasOwnProperty(id)) {
-                    app.entities[id].render(app);
-                }
+        if (this._running) {
+            for (i = 0; i < this._canvases.length; i++) {
+                app._canvases[i].render(app);
             }
 
             this._requestAnimationFrameID = window.requestAnimationFrame(function () { app.render(app); });
         }
     },
 
-    addCanvas: function (canvas) {
-        this.addEntity(canvas);
+    addCanvas: function (canvas, parentElement) {
+        this._canvases.push(canvas);
+        canvas.setParentElement(parentElement);
     },
 
     removeCanvas: function (canvas) {
-        var element = document.getElementById(canvas.canvas.id);
-        canvas.parentElement.removeChild(element);
-        this.removeEntity(canvas);
-    }
-},
-    {
-        canvases: { get: function () { return this.entities; } },
-        fps: { get: function () { return this._fpsCounter.fps | 0; } }
+        canvas.setParentElement(null);
     },
 
-    [BitEntityContainerMixin]);
+    getFPS: function () {
+        return this._fpsCounter.fps | 0;
+    },
+
+    isRunning: function () {
+        return this._running;
+    }
+});
