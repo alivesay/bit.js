@@ -1,5 +1,5 @@
 /*jslint bitwise: true, browser: true, continue: true, nomen: true, plusplus: true, node: true */
-/*global bit, ArrayBuffer, BitColor, BitDimensionsMixin, BitEnum, BitObject, Uint32Array, Uint8ClampedArray */
+/*global bit, ArrayBuffer, BitColor, BitEnum, BitObject, Uint32Array, Uint8ClampedArray */
 /*global goog */
 
 'use strict';
@@ -8,7 +8,6 @@ goog.provide('bit.core.BitBuffer');
 goog.require('bit.core.bit_namespace');
 goog.require('bit.core.BitObject');
 goog.require('bit.core.BitColor');
-goog.require('bit.core.BitDimensionsMixin');
 goog.require('bit.core.BitEnum');
 
 var BitBufferBlendModes = bit.core.BitBufferBlendModes = BitEnum.create([
@@ -21,10 +20,12 @@ BitObject.extend('bit.core.BitBuffer', {
     _buffer8: null,
     _buffer32: null,
     _blendMode: BitBufferBlendModes.NONE,
+    _width: 1,
+    _height: 1,
 
     _construct: function (width, height) {
-        this.setWidth(width || this.getWidth());
-        this.setHeight(height || this.getWidth());
+        this._width = width || this._width;
+        this._height = height || this._height;
 
         if (width === undefined && height === undefined) { return; }
 
@@ -50,7 +51,7 @@ BitObject.extend('bit.core.BitBuffer', {
     /** Clears render data. */
     clear: function (color) {
         var i = this._buffer32.length,
-            rgba = color.getRGBA();
+            rgba = color.rgba;
         while (i--) {
             this._buffer32[i] = rgba;
         }
@@ -65,10 +66,10 @@ BitObject.extend('bit.core.BitBuffer', {
 
     /** Draws source data to render data using source-alpha blending. */
     blit: function (sprite, x, y) {
-        var spriteBuffer = sprite.getBuffer32(),
-            spriteLUT = sprite.getBuffer32LUT(),
-            spriteWidth = sprite.getWidth(),
-            spriteHeight = sprite.getHeight(),
+        var spriteBuffer = sprite.buffer32,
+            spriteLUT = sprite.buffer32LUT,
+            spriteWidth = sprite.width,
+            spriteHeight = sprite.height,
             dx = spriteWidth,
             dy = spriteHeight,
             bx = x + spriteWidth,
@@ -92,10 +93,10 @@ BitObject.extend('bit.core.BitBuffer', {
 
     /** Draws source data to render data forcing fixed 0xFF alpha. */
     blitNoAlpha: function (sprite, x, y) {
-        var spriteBuffer = sprite.getBuffer32(),
-            spriteLUT = sprite.getBuffer32LUT(),
-            spriteWidth = sprite.getWidth(),
-            spriteHeight = sprite.getHeight(),
+        var spriteBuffer = sprite.buffer32,
+            spriteLUT = sprite.buffer32LUT,
+            spriteWidth = sprite.width,
+            spriteHeight = sprite.height,
             dx = spriteWidth,
             dy = spriteHeight,
             bx = x + spriteWidth,
@@ -157,25 +158,43 @@ BitObject.extend('bit.core.BitBuffer', {
         var canvas = document.createElement('canvas'),
             canvasCtx = canvas.getContext('2d');
 
-        this.setWidth(img.width);
-        this.setHeight(img.height);
+        this._width = img.width;
+        this._height = img.height;
         this._buffer32LUT = this._buildLUT(this._width, this._height);
         canvasCtx.drawImage(img, 0, 0);
         this._buffer8 = canvasCtx.getImageData(0, 0, this._width, this._height).data;
         this._buffer32 = new Uint32Array(this._buffer8.buffer);
 
         return this;
-    },
-
-    getBuffer8: function () {
-        return this._buffer8;
-    },
-
-    getBuffer32: function () {
-        return this._buffer32;
-    },
-
-    getBuffer32LUT: function () {
-        return this._buffer32LUT;
     }
-}, null, [BitDimensionsMixin]);
+}).addAttributes({
+    buffer8: {
+        get: function () {
+            return this._buffer8;
+        }
+    },
+
+    buffer32: {
+        get: function () {
+            return this._buffer32;
+        }
+    },
+
+    buffer32LUT: {
+        get: function () {
+            return this._buffer32LUT;
+        }
+    },
+
+    width: {
+        get: function () {
+            return this._width;
+        }
+    },
+
+    height: {
+        get: function () {
+            return this._height;
+        }
+    }
+});

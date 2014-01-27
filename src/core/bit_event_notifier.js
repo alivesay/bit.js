@@ -16,7 +16,7 @@ BitObject.extend('bit.core.BitEventNotifier', {
     _construct: function () {
         this._handlers = [];
     },
-
+// TODO: wtf am i doing with this class?
     addHandler: function (handler, qualifiedEventName) {
         var eventHandlers = this._handlers[qualifiedEventName] = this._handlers[event.qualifiedName] || [];
 

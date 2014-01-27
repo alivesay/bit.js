@@ -1,5 +1,6 @@
 /*jslint bitwise: true, browser: true, continue: true, nomen: true, plusplus: true, node: true */
-/*global bit, bit_global, bit_namespace, bit_object_pool, BitObject, BitObjectPool, BitObjectPoolMemberMixin, bit_noop, BitUtil */
+/*global bit, bit_global, bit_namespace, bit_object_pool, BitInterface, BitObject, BitObjectPool, bit_noop, BitUtil,
+         IBitObjectPoolPoolable */
 /*global goog */
 
 'use strict';
@@ -7,17 +8,19 @@
 goog.provide('bit.core.BitObject');
 goog.provide('bit.core.BitObjectPoolManager');
 goog.provide('bit.core.BitObjectPool');
-goog.provide('bit.core.BitObjectPoolMemberMixin');
+goog.provide('bit.core.BitObjectPool.IPoolable');
 goog.require('bit.core.bit_namespace');
 goog.require('bit.core.BitUtil');
 goog.require('bit.core.bit_noop');
 
 bit.core.BitObject = {
-    _mixins: null,
     _classNamespace: 'bit.core',
     _className: 'BitObject',
     _instanceUUID: null,
     _superClass: null,
+    _attributes: null,
+    _interfaces: null,
+    _mixins: null,
     _validPropertyValueTypes: ['function', 'string', 'number', 'boolean'],
     _uuidHexChars: '0123456789abcdef',
     _uuidPattern: 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx',
@@ -42,6 +45,7 @@ bit.core.BitObject = {
         return mixin._superClass.className === 'BitObject' && mixin._construct === bit_noop;
     },
 
+    // TODO: move this out of BitObject
     /**
      * Generates an RFC4122-compliant v4 UUID.
      * @returns {string}
@@ -149,6 +153,42 @@ bit.core.BitObject = {
         return newObject;
     },
 
+    withInterface: function (iobject) {
+        this._interfaces = this._interfaces || [];
+        this._interfaces.push(iobject);
+
+        // TODO: move into BitInterface
+        if (!this._implementsInterface(iobject)) {
+            throw new Error('BitObject.addInterface: Class does not fully implement interface' + iobject.className);
+        }
+
+        return this;
+    },
+
+    _implementsInterface: function (iobject) {
+        return Object.keys(iobject).every(function (e, i, a) { return this.hasOwnProperty(e); }, this);
+    },
+
+    hasInterface: function (iobject) {
+        return BitUtil.arrayContains(this._interfaces, iobject);
+    },
+
+    // TODO: remove descriptors from extend()
+    addAttributes: function (attributes) {
+        this._attributes = this._attributes || {};
+
+        Object.keys(attributes).forEach(function (e, i, a) {
+            if (attributes[e].hasOwnProperty('meta')) {
+                this._attributes[e] = attributes[e].meta;
+                delete attributes[e].meta;
+            } else {
+                this._attributes[e] = {};
+            }
+        }, this);
+
+        Object.defineProperties(this, attributes);
+    },
+
     toString: function () {
         return '[ object ' + this._className + ' ' + this._instanceUUID + ' ]';
     },
@@ -175,15 +215,39 @@ bit.core.BitObject = {
         'classNamespace': { get: function () { return this._classNamespace; }, enumerable: true },
         'className': { get:  function () { return this._className; }, enumerable: true },
         'instanceUUID': { get: function () { return this._instanceUUID; }, enumerable: true },
-        'superClass': { get: function () { return this._superClass; }, enumerable: true }
+        'superClass': { get: function () { return this._superClass; }, enumerable: true },
+        'attributes': { get: function () { return this._attributes; }, enumerable: true }
     });
     self._instanceUUID = bit.core.BitObject.generateUUID();
 }(bit.core.BitObject));
 
 var BitObject = bit.core.BitObject;
 
-BitObject.extend('bit.core.BitObjectPoolMemberMixin', {
-    release: BitObject.pureVirtualFunction('release')
+BitObject.extend('bit.core.BitInterface', {
+    _construct: function () {
+        throw new Error('BitInterface: Attempted to instantiate interface object ' + this.className);
+    },
+
+    extend: function (name, iprops) {
+        var newObject = Object.create(this),
+            namespaces;
+
+        namespaces = name.split('.');
+        newObject._className = namespaces.pop();
+        if (namespaces.length > 0) {
+            bit_namespace(bit_global, namespaces.join('.'));
+            namespaces.reduce(function (obj, i) { return obj[i]; }, bit_global);
+        }
+        this._classNamespace = namespaces.join('.');
+
+        Object.keys(iprops).forEach(function (e, i, a) {
+            this[e.name] = e;
+        }, this);
+
+        newObject._superClass = this;
+
+        return newObject;
+    }
 });
 
 BitObject.extend('bit.core.BitObjectPool', {
@@ -225,8 +289,13 @@ BitObject.extend('bit.core.BitObjectPool', {
     },
 
     isPoolableObject: function (object) {
-        return BitObject.isPrototypeOf(object) && object.hasAllPropertiesOf(BitObjectPoolMemberMixin);
+        return BitObject.isPrototypeOf(object) && object.hasInterface(bit.core.BitObjectPool.IBitObjectPoolPoolable);
     }
 });
 
-var bit_object_pool = BitObjectPool.create();
+// TODO: add interface support
+BitInterface.extend('bit.core.BitObjectPool.IBitObjectPoolPoolable', {
+    release: {
+        type: 'function'
+    }
+});

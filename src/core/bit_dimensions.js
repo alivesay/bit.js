@@ -11,33 +11,32 @@ goog.require('bit.core.BitObject');
 
 BitObject.extend('bit.core.BitDimensionsMixin', {
     _width: 0,
-    _height: 0,
+    _height: 0
+}).addAttributes({
+    width: {
+        get: function () {
+            return this._width;
+        },
 
-    getWidth: function () {
-        return this._width;
+        set: function (width) {
+            this._width = width;
+        }
     },
 
-    setWidth: function (width) {
-        this._width = width;
-    },
+    height: {
+        get: function () {
+            return this._height;
+        },
 
-    getHeight: function () {
-        return this._height;
-    },
-
-    setHeight: function (height) {
-        this._height = height;
-    },
-
-    setDimensions: function (width, height) {
-        this.setWidth(width);
-        this.setHeight(height);
+        set: function (height) {
+            this._height = height;
+        }
     }
 });
 
 BitObject.extend('bit.core.BitDimensions', {
     _construct: function (width, height) {
-        this.setWidth(width || this.getWidth());
-        this.setHeight(height || this.getWidth());
+        this.width = width || this.width;
+        this.height = height || this.height;
     }
 }, null, [BitDimensionsMixin]);

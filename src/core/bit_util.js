@@ -13,7 +13,7 @@ var bit_noop = bit.core.bit_noop;
 
 bit.core.BitUtil = {
     arrayIndexOf: function (array, value) {
-        var i, len = array.length;
+        var i, len = (array === null || array === undefined) ? 0 : array.length;
         for (i = 0; i < len; i++) {
             if (array[i] === value) { return i; }
         }

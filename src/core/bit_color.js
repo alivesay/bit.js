@@ -49,28 +49,34 @@ BitObject.extend('bit.core.BitColor', {
                                       (((srcG * srcA) + (dstG * (255 - srcA))) >> 8) << this.GSHIFT |
                                       (((srcB * srcA) + (dstB * (255 - srcA))) >> 8) << this.BSHIFT |
                                       srcA << this.ASHIFT;
-    },
-
-    getRGBA: function () {
-        return (this.r << this.RSHIFT |
+    }
+}).addAttributes({
+    rgba: {
+        get: function () {
+            return (this.r << this.RSHIFT |
                 this.g << this.GSHIFT |
                 this.b << this.BSHIFT |
                 this.a << this.ASHIFT) >>> 0;
+        },
+
+        set: function (rgbaValue) {
+            this.r = rgbaValue >> this.RSHIFT & 0xFF;
+            this.g = rgbaValue >> this.GSHIFT & 0xFF;
+            this.b = rgbaValue >> this.BSHIFT & 0xFF;
+            this.a = rgbaValue >> this.ASHIFT & 0xFF;
+        }
     },
 
-    setRGBA: function (rgbaValue) {
-        this.r = rgbaValue >> this.RSHIFT & 0xFF;
-        this.g = rgbaValue >> this.GSHIFT & 0xFF;
-        this.b = rgbaValue >> this.BSHIFT & 0xFF;
-        this.a = rgbaValue >> this.ASHIFT & 0xFF;
+    rgbaCSSString: {
+        get: function () {
+            return 'rgba(' + this.r + ',' + this.g + ',' + this.b + ',' + this.a + ')';
+        }
     },
 
-    getRGBACSSString: function () {
-        return 'rgba(' + this.r + ',' + this.g + ',' + this.b + ',' + this.a + ')';
-    },
-
-    getNormalArray: function () {
-        return [this.r / 255, this.g / 255, this.b / 255, this.a / 255];
+    rgbaNormalArray: {
+        get: function () {
+            return [this.r / 255, this.g / 255, this.b / 255, this.a / 255];
+        }
     }
 });
 

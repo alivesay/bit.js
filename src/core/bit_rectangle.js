@@ -15,9 +15,9 @@ BitObject.extend('bit.core.BitRectangleMixin', {}, null, [BitVector2DMixin, BitD
 
 BitObject.extend('bit.core.BitRectangle', {
     _construct: function (x, y, width, height) {
-        this.setX(x || this.getX());
-        this.setY(y || this.getY());
-        this.setWidth(width || this.getWidth());
-        this.setHeight(height || this.getHeight());
+        this.x = x || this.x;
+        this.y = y || this.y;
+        this.width = width || this.width;
+        this.height = height || this.height;
     }
 }, null, [BitRectangleMixin]);

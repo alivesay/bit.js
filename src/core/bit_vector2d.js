@@ -13,61 +13,65 @@ BitObject.extend('bit.core.BitVector2DMixin', {
     _x: 0,
     _y: 0,
 
-    getX: function () {
-        return this._x;
-    },
-
-    setX: function (x) {
-        this._x = x;
-    },
-
-    getY: function () {
-        return this._y;
-    },
-
-    setY: function (y) {
-        this._y = y;
-    },
-
     cross: function (vector) {
-        return this.getX() * vector.getY() + this.getY() * vector.getX();
+        return this.x * vector.y + this.y * vector.x;
     },
 
     dot: function (vector) {
-        return this.getX() * vector.getX() + this.getY() * vector.getY();
+        return this.x * vector.x + this.y * vector.y;
     },
 
     length: function () {
-        return Math.sqrt(this.getX() * this.getX() + this.getY() * this.getY());
+        return Math.sqrt(this.x * this.x + this.y * this.y);
     },
 
     normalize: function () {
         var normalVector = BitVector2D.create(),
             length = this.length();
         if (length > 0) {
-            normalVector.setX(normalVector.getX() / length);
-            normalVector.setY(normalVector.getY() / length);
+            normalVector.x = normalVector.x / length;
+            normalVector.y = normalVector.y / length;
         }
         return normalVector;
     },
 
     invertX: function () {
-        this.setX(-this.getX());
+        this.x = -this.x;
     },
 
     invertY: function () {
-        this.setY(-this.getY());
+        this.y = -this.y;
     },
 
     invert: function () {
-        this.invertX();
-        this.invertY();
+        this.x = -this.x;
+        this.y = -this.y;
+    }
+}).addAttributes({
+    x: {
+        get: function () {
+            return this._x;
+        },
+
+        set: function (x) {
+            this._x = x;
+        }
+    },
+
+    y: {
+        get: function () {
+            return this._y;
+        },
+
+        set: function (y) {
+            this._y = y;
+        }
     }
 });
 
 BitObject.extend('bit.core.BitVector2D', {
     _construct: function (x, y) {
-        this.setX(x || this.getX());
-        this.setY(y || this.getY());
+        this.x = x || this.x;
+        this.y = y || this.y;
     }
 }, null, [BitVector2DMixin]);

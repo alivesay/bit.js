@@ -129,18 +129,28 @@ BitObject.extend('bit.core.BitApp', {
 
     addCanvas: function (canvas, parentElement) {
         this._canvases.push(canvas);
-        canvas.setParentElement(parentElement);
+        canvas.parentElement = parentElement;
     },
 
     removeCanvas: function (canvas) {
-        canvas.setParentElement(null);
+        canvas.parentElement = null;
     },
 
     getFPS: function () {
         return this._fpsCounter.fps | 0;
-    },
+    }
+}).addAttributes({
+    running: {
+        get: function () {
+            return this._running;
+        },
 
-    isRunning: function () {
-        return this._running;
+        set: function (bool) {
+            if (bool && !this._running) {
+                this.start();
+            } else if (!bool && this._running) {
+                this.stop();
+            }
+        }
     }
 });
