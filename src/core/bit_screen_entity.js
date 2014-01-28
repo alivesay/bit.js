@@ -26,7 +26,7 @@ BitEntity.extend('bit.core.BitScreenEntity', {
         if (buffer) {
             this._buffer = buffer;
         }
-        this._velocity = BitVector2D.create(0, 0);
+        this._velocity = BitVector2D.create();
     },
 
     tick: function (app, canvas, screen, layer) {

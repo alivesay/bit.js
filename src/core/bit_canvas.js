@@ -1,5 +1,5 @@
 /*jslint bitwise: true, browser: true, continue: true, nomen: true, plusplus: true, node: true */
-/*global bit, BitColor, BitObject, BitScreen, BitUtil */
+/*global bit, BitColor, BitObject, BitObjectPool, BitScreen, BitUtil */
 /*global goog */
 
 'use strict';

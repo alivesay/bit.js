@@ -66,6 +66,8 @@ BitObject.extend('bit.core.BitBuffer', {
 
     /** Draws source data to render data using source-alpha blending. */
     blit: function (sprite, x, y) {
+        // TODO: function broken, possible int sign issue, maybe in blendColors.
+
         var spriteBuffer = sprite.buffer32,
             spriteLUT = sprite.buffer32LUT,
             spriteWidth = sprite.width,
@@ -73,17 +75,18 @@ BitObject.extend('bit.core.BitBuffer', {
             dx = spriteWidth,
             dy = spriteHeight,
             bx = x + spriteWidth,
-            by = y + spriteHeight,
-            offset;
+            by = y + spriteHeight;
 
         while (dx--) {
             bx--;
             while (dy--) {
                 by--;
-                if (bx < 0 || by < 0 || bx >= this._width || by >= this._height) { continue; }
-                offset = (dx + dy * spriteWidth);
-                if (spriteBuffer[offset] >> BitColor.ASHIFT & BitColor.AMASK) {
-                    this._buffer32[this._buffer32LUT[bx][by]] = this.blendColors(spriteBuffer[offset], spriteBuffer[spriteLUT[bx][by]]) | BitColor.AMASK;
+                if (bx < 0 || bx >= this._width || by < 0 || by >= this._height) { continue; }
+                if ((spriteBuffer[spriteLUT[dx][dy]] >> BitColor.ASHIFT & 0xFF) >>> 0 > 0) {
+                    console.log((BitColor.blendColors(spriteBuffer[spriteLUT[dx][dy]], this._buffer32[this._buffer32LUT[bx][by]]) | BitColor.AMASK).toString(16));
+                    this._buffer32[this._buffer32LUT[bx][by]] =
+                        BitColor.blendColors(spriteBuffer[spriteLUT[dx][dy]],
+                                             this._buffer32[this._buffer32LUT[bx][by]]) | BitColor.AMASK;
                 }
             }
             dy = spriteHeight;

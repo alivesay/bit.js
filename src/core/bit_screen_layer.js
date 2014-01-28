@@ -38,7 +38,7 @@ BitObject.extend('bit.core.BitScreenLayer', {
             }
         }
     }
-}, null, [BitEntityContainerMixin]).addAttributes({
+}, [BitEntityContainerMixin]).addAttributes({
     x: {
         meta: {
             type: 'number'

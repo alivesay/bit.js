@@ -74,4 +74,4 @@ BitObject.extend('bit.core.BitVector2D', {
         this.x = x || this.x;
         this.y = y || this.y;
     }
-}, null, [BitVector2DMixin]);
+}, [BitVector2DMixin]);

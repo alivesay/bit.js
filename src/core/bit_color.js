@@ -35,8 +35,8 @@ BitObject.extend('bit.core.BitColor', {
     // TODO: should probably be in a graphics class instead
     /** Blends two colors using source-alpha blending. */
     blendColors: function (foregroundColor, backgroundColor) {
-        var frgba = foregroundColor.getRGBA(),
-            brgba = backgroundColor.getRGBA(),
+        var frgba = foregroundColor.rgba,
+            brgba = backgroundColor.rgba,
             srcR = frgba >> this.RSHIFT & 0xFF,
             srcG = frgba >> this.GSHIFT & 0xFF,
             srcB = frgba >> this.BSHIFT & 0xFF,

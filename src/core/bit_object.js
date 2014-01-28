@@ -8,7 +8,7 @@
 goog.provide('bit.core.BitObject');
 goog.provide('bit.core.BitObjectPoolManager');
 goog.provide('bit.core.BitObjectPool');
-goog.provide('bit.core.BitObjectPool.IPoolable');
+goog.provide('bit.core.BitObjectPool.IBitObjectPoolPoolable');
 goog.require('bit.core.bit_namespace');
 goog.require('bit.core.BitUtil');
 goog.require('bit.core.bit_noop');
@@ -83,32 +83,31 @@ bit.core.BitObject = {
         return object;
     },
 
-    extend: function (name, props, descriptors, mixins, addGlobal) {
-        var newObject = Object.create(this), propName, propNames, namespaces, i, j;
-        descriptors = descriptors || {};
-        addGlobal = addGlobal || true;
+    _buildClassNamespace: function (name, object) {
+        var namespaces = name.split('.');
 
-        namespaces = name.split('.');
-        newObject._className = namespaces.pop();
+        object._className = namespaces.pop();
         if (namespaces.length > 0) {
             bit_namespace(bit_global, namespaces.join('.'));
             namespaces.reduce(function (obj, i) { return obj[i]; }, bit_global);
         }
-        this._classNamespace = namespaces.join('.');
+        object._classNamespace = namespaces.join('.');
+    },
 
-        if (addGlobal) { bit_global[newObject._className] = newObject; }
+    extend: function (name, props, mixins) {
+        var newObject = Object.create(this), propName, propNames, i, j;
+
+        this._buildClassNamespace(name, newObject);
 
         if (props) {
             propNames = Object.getOwnPropertyNames(props);
             i = propNames.length;
             while (i--) {
                 propName = propNames[i];
-                if (!descriptors.hasOwnProperty(propName)) {
-                    if (!BitObject._isValidPropertyType(props[propName])) {
-                        throw new Error('BitObject.extend: Invalid field type for property [' + propName + ']');
-                    }
-                    newObject[propName] = props[propName];
+                if (!BitObject._isValidPropertyType(props[propName])) {
+                    throw new Error('BitObject.extend: Invalid field type for property [' + propName + ']');
                 }
+                newObject[propName] = props[propName];
             }
         }
         if (mixins) {
@@ -146,9 +145,10 @@ bit.core.BitObject = {
                 }
             }
         }
-        Object.defineProperties(newObject, descriptors);
 
         newObject._superClass = this;
+
+        bit_global[newObject._className] = newObject;
 
         return newObject;
     },
@@ -160,6 +160,16 @@ bit.core.BitObject = {
         // TODO: move into BitInterface
         if (!this._implementsInterface(iobject)) {
             throw new Error('BitObject.addInterface: Class does not fully implement interface' + iobject.className);
+        }
+
+        return this;
+    },
+
+    withInterfaces: function () {
+        var i;
+
+        for (i = 0; i < arguments.length; i++) {
+            this.withInterface(arguments[i]);
         }
 
         return this;
@@ -187,6 +197,8 @@ bit.core.BitObject = {
         }, this);
 
         Object.defineProperties(this, attributes);
+
+        return this;
     },
 
     toString: function () {
@@ -209,14 +221,14 @@ bit.core.BitObject = {
     }
 };
 
-// TODO: do these really need to be enumerable?
 (function (self) {
     Object.defineProperties(self, {
-        'classNamespace': { get: function () { return this._classNamespace; }, enumerable: true },
-        'className': { get:  function () { return this._className; }, enumerable: true },
-        'instanceUUID': { get: function () { return this._instanceUUID; }, enumerable: true },
-        'superClass': { get: function () { return this._superClass; }, enumerable: true },
-        'attributes': { get: function () { return this._attributes; }, enumerable: true }
+        'classNamespace': { get: function () { return this._classNamespace; } },
+        'className': { get:  function () { return this._className; } },
+        'instanceUUID': { get: function () { return this._instanceUUID; } },
+        'superClass': { get: function () { return this._superClass; } },
+        'attributes': { get: function () { return this._attributes; } },
+        'interfaces': { get: function () { return this._interfaces; } }
     });
     self._instanceUUID = bit.core.BitObject.generateUUID();
 }(bit.core.BitObject));
@@ -229,22 +241,20 @@ BitObject.extend('bit.core.BitInterface', {
     },
 
     extend: function (name, iprops) {
-        var newObject = Object.create(this),
+        var tempObject = Object.create(this),
+            newObject,
             namespaces;
 
-        namespaces = name.split('.');
-        newObject._className = namespaces.pop();
-        if (namespaces.length > 0) {
-            bit_namespace(bit_global, namespaces.join('.'));
-            namespaces.reduce(function (obj, i) { return obj[i]; }, bit_global);
-        }
-        this._classNamespace = namespaces.join('.');
+        tempObject._superClass = this;
+        this._buildClassNamespace(name, tempObject);
+
+        newObject = Object.create(tempObject);
 
         Object.keys(iprops).forEach(function (e, i, a) {
-            this[e.name] = e;
-        }, this);
+            newObject[e] = e;
+        });
 
-        newObject._superClass = this;
+        bit_global[newObject._className] = newObject;
 
         return newObject;
     }
@@ -293,7 +303,6 @@ BitObject.extend('bit.core.BitObjectPool', {
     }
 });
 
-// TODO: add interface support
 BitInterface.extend('bit.core.BitObjectPool.IBitObjectPoolPoolable', {
     release: {
         type: 'function'

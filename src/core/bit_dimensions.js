@@ -39,4 +39,4 @@ BitObject.extend('bit.core.BitDimensions', {
         this.width = width || this.width;
         this.height = height || this.height;
     }
-}, null, [BitDimensionsMixin]);
+}, [BitDimensionsMixin]);
