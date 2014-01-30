@@ -38,7 +38,7 @@ BitObject.extend('bit.core.BitScreenLayer', {
             }
         }
     }
-}, [BitEntityContainerMixin]).addAttributes({
+}).addAttributes({
     x: {
         meta: {
             type: 'number'
@@ -90,4 +90,6 @@ BitObject.extend('bit.core.BitScreenLayer', {
             this._resize(this._width, height);
         }
     }
-});
+}).mixin([
+    BitEntityContainerMixin
+]);

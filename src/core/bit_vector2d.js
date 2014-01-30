@@ -1,17 +1,49 @@
 /*jslint bitwise: true, browser: true, continue: true, nomen: true, plusplus: true, node: true */
-/*global bit, BitObject, BitVector2D, BitVector2DMixin */
+/*global bit, BitInterface, BitObject, BitVector2D, IBitVector2D, MBitVector2D */
 /*global goog */
 
 'use strict';
 
 goog.provide('bit.core.BitVector2D');
-goog.provide('bit.core.BitVector2DMixin');
+goog.provide('bit.core.IBitVector2D');
+goog.provide('bit.core.MBitVector2D');
 goog.require('bit.core.bit_namespace');
 goog.require('bit.core.BitObject');
+goog.require('bit.core.BitInterface');
 
-BitObject.extend('bit.core.BitVector2DMixin', {
-    _x: 0,
-    _y: 0,
+BitInterface.extend('bit.core.IBitVector2D', {
+    x: {
+        type: 'number'
+    },
+    y: {
+        type: 'number'
+    },
+    cross: {
+        type: 'function'
+    },
+    dot: {
+        type: 'function'
+    },
+    length: {
+        type: 'function'
+    },
+    normalize: {
+        type: 'function'
+    },
+    invertX: {
+        type: 'function'
+    },
+    invertY: {
+        type: 'function'
+    },
+    invert: {
+        type: 'function'
+    }
+});
+
+BitObject.extend('bit.core.MBitVector2D', {
+    x: 0,
+    y: 0,
 
     cross: function (vector) {
         return this.x * vector.y + this.y * vector.x;
@@ -47,26 +79,6 @@ BitObject.extend('bit.core.BitVector2DMixin', {
         this.x = -this.x;
         this.y = -this.y;
     }
-}).addAttributes({
-    x: {
-        get: function () {
-            return this._x;
-        },
-
-        set: function (x) {
-            this._x = x;
-        }
-    },
-
-    y: {
-        get: function () {
-            return this._y;
-        },
-
-        set: function (y) {
-            this._y = y;
-        }
-    }
 });
 
 BitObject.extend('bit.core.BitVector2D', {
@@ -74,4 +86,8 @@ BitObject.extend('bit.core.BitVector2D', {
         this.x = x || this.x;
         this.y = y || this.y;
     }
-}, [BitVector2DMixin]);
+}).mixin([
+    MBitVector2D
+]).withInterfaces([
+    IBitVector2D
+]);
