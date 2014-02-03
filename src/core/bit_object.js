@@ -15,7 +15,6 @@ goog.require('bit.core.BitUtil');
 goog.require('bit.core.bit_noop');
 
 bit.core.BitObject = {
-    _classNamespace: 'bit.core',
     _className: 'BitObject',
     _instanceUUID: null,
     _superClass: null,
@@ -84,48 +83,31 @@ bit.core.BitObject = {
         return object;
     },
 
-    _buildClassNamespace: function (name, object) {
-        var namespaces = name.split('.');
-
-        object._className = namespaces.pop();
+    _buildClassNamespace: function (namespaces, object) {
         if (namespaces.length > 0) {
             bit_namespace(bit_global, namespaces.join('.'));
         }
-        object._classNamespace = namespaces.join('.');
     },
 
-    _addMixinClass: function (mixin) {
-        var propNames = Object.getOwnPropertyNames(mixin), propName, i;
+    _addMixin: function (mixin) {
+        this._mixins = this._mixins || Object.create(null);
 
         if (!BitInterface.isPrototypeOf(mixin) && !this._isValidMixin(mixin)) {
-            throw new Error('BitObject.extend: Bad mixin [' + mixin._className + '] on [' + this._className + ']');
+            throw new Error('BitObject.extend: Bad mixin [' + mixin.className + '] on [' + this._className + ']');
         }
 
-        this._mixins.push(mixin);
+        this._mixins[mixin.className] = mixin;
 
-        // TODO: do we really want to track inheritance chain for mixins?
-        if (mixin._mixins) {
-            mixin._mixins.forEach(function (e, i, a) {
-                if (!BitUtil.arrayContains(this._mixins, e)) {
-                    this._mixins.push();
-                }
-            }, this);
-        }
-
-        i = propNames.length;
-        while (i--) {
-            propName = propNames[i];
-            if (!this.hasOwnProperty(propName) && mixin[propName] !== undefined) {
-                this[propName] = mixin[propName];
+        Object.getOwnPropertyNames(mixin).forEach(function (e, i, a) {
+            if (!this.hasOwnProperty(e) && mixin[e] !== e) {
+                this[e] = mixin[e];
             }
-        }
+        }, this);
     },
 
     mixin: function (mixins) {
-        this._mixins = this._mixins || [];
-
         mixins.forEach(function (e, i, a) {
-            this._addMixinClass(e);
+            this._addMixin(e);
         }, this);
 
         return this;
@@ -133,34 +115,31 @@ bit.core.BitObject = {
 
     extend: function (name, props, addGlobal) {
         // TODO: refactor
-        var newObject = Object.create(this), propName, propNames, i, j;
+        var newObject = Object.create(this),
+            ns;
 
         addGlobal = addGlobal || true;
 
-        this._buildClassNamespace(name, newObject);
-
         if (props) {
-            propNames = Object.getOwnPropertyNames(props);
-            i = propNames.length;
-            while (i--) {
-                propName = propNames[i];
-                if (!this._isValidPropertyType(props[propName])) {
+            Object.keys(props).forEach(function (e, i, a) {
+                if (!this._isValidPropertyType(props[e])) {
                     // TODO: can I support non-primitive types here?
-                    throw new Error('BitObject.extend: Invalid field type for property [' + propName + ']');
+                    throw new Error('BitObject.extend: Invalid field type for property [' + e + ']');
                 }
-                newObject[propName] = props[propName];
-            }
-        }
-
-        if (this._mixins) {
-            this._mixins.forEach(function (e, i, a) {
-                if (!BitUtil.arrayContains(newObject._mixins, e)) {
-                    newObject._mixins.push(e);
-                }
+                newObject[e] = props[e];
             }, this);
         }
 
+        newObject._mixins = this._mixins ? BitUtil.objectShallowCopy(this._mixins) : null;
+        newObject._attributes = this._attributes ? BitUtil.objectShallowCopy(this._attributes) : null;
+        newObject._interfaces = this._interfaces ? BitUtil.objectShallowCopy(this._interfaces) : null;
         newObject._superClass = this;
+
+        ns = name.split('.');
+        newObject._className = ns.pop();
+        if (ns.length > 0) {
+            bit_namespace(bit_global, ns.join('.'))[newObject._className] = newObject;
+        }
 
         if (addGlobal) {
             bit_global[newObject._className] = newObject;
@@ -170,18 +149,18 @@ bit.core.BitObject = {
     },
 
     _addInterface: function (iobject) {
-        this._interfaces = this._interfaces || [];
-        this._interfaces.push(iobject);
+        this._interfaces = this._interfaces || Object.create(null);
 
-        // TODO: move into BitInterface
-        if (!iobject.implementsInterface(this)) {
+        if (!this.hasInterfaceOf(iobject)) {
             throw new Error('BitObject.addInterface: Class does not fully implement interface ' + iobject.className);
         }
+
+        this._interfaces[iobject.className] = iobject;
 
         return this;
     },
 
-    withInterfaces: function (iobjects) {
+    fullfills: function (iobjects) {
         iobjects.forEach(function (e, i, a) {
             this._addInterface(e);
         }, this);
@@ -189,19 +168,21 @@ bit.core.BitObject = {
         return this;
     },
 
-    hasInterface: function (iobject) {
-        return BitUtil.arrayContains(this._interfaces, iobject);
+    hasInterfaceOf: function (iobject) {
+        return Object.keys(iobject).every(function (e, i, a) {
+            return this.hasOwnProperty(e);
+        }, this);
     },
 
     addAttributes: function (attributes) {
-        this._attributes = this._attributes || {};
+        this._attributes = this._attributes || Object.create(null);
 
         Object.keys(attributes).forEach(function (e, i, a) {
             if (attributes[e].hasOwnProperty('meta')) {
                 this._attributes[e] = attributes[e].meta;
                 delete attributes[e].meta;
             } else {
-                this._attributes[e] = {};
+                this._attributes[e] = Object.create(null);
             }
         }, this);
 
@@ -219,9 +200,10 @@ bit.core.BitObject = {
     },
 
     hasOwnProperties: function (props) {
+        // TODO: should this use Object.keys() instead?
         var self = this;
-        return props.reduce(function (a, b) {
-            return a && self.hasOwnProperty(b);
+        return props.every(function (e, i, a) {
+            return self.hasOwnProperty(e);
         }, true);
     },
 
@@ -232,7 +214,6 @@ bit.core.BitObject = {
 
 (function (self) {
     Object.defineProperties(self, {
-        'classNamespace': { get: function () { return this._classNamespace; } },
         'className': { get:  function () { return this._className; } },
         'instanceUUID': { get: function () { return this._instanceUUID; } },
         'superClass': { get: function () { return this._superClass; } },
@@ -253,13 +234,18 @@ BitObject.extend('bit.core.BitInterface', {
 
     extend: function (name, iprops, addGlobal) {
         var tempObject = Object.create(this),
-            newObject;
+            newObject,
+            ns;
+
+        // TODO: and maybe mixins and interfaces should be stored in dict (duplicates)?
+        // TODO: what if i extend a BitInterface?
 
         addGlobal = addGlobal || true;
 
+        ns = name.split('.');
+        tempObject._className = ns.pop();
         tempObject._superClass = this;
-
-        this._buildClassNamespace(name, tempObject);
+        tempObject._mixins = this._mixins ? BitUtil.objectShallowCopy(this._mixins) : null;
 
         newObject = Object.create(tempObject);
 
@@ -267,17 +253,39 @@ BitObject.extend('bit.core.BitInterface', {
             newObject[e] = iprops[e];
         });
 
+        if (ns.length > 0) {
+            bit_namespace(bit_global, ns.join('.'))[newObject._className] = newObject;
+        }
+
         if (addGlobal) {
             bit_global[newObject._className] = newObject;
         }
+
         return newObject;
     },
 
-    implementsInterface: function (object) {
-        // TODO: check object keys enumeration
-//        namespaces.reduce(function (obj, i) { return obj[i]; }, bit_global);
+    _addMixin: function (mixin) {
+        this._mixins = this._mixins || BitObject.create(null);
 
-        return Object.keys(this).every(function (e, i, a) { return object.hasOwnProperty(e); }, this);
+        if (!BitInterface.isPrototypeOf(mixin) && !this._isValidMixin(mixin)) {
+            throw new Error('BitObject.extend: Bad mixin [' + mixin.className + '] on [' + this._className + ']');
+        }
+
+        this._mixins[mixin.className] = mixin;
+
+        Object.getOwnPropertyNames(mixin).forEach(function (e, i, a) {
+            if (!this.hasOwnProperty(e) && mixin[e] !== e) {
+                this[e] = mixin[e];
+            }
+        }, this);
+    },
+
+    mixin: function (mixins) {
+        mixins.forEach(function (e, i, a) {
+            this._addMixin(e);
+        }, this);
+
+        return this;
     }
 });
 
@@ -285,7 +293,7 @@ BitObject.extend('bit.core.BitObjectPool', {
     _classPools: null,
 
     _construct: function () {
-        this._classPools = {};
+        this._classPools = Object.create(null);
     },
 
     alloc: function (object, args) {
@@ -316,16 +324,14 @@ BitObject.extend('bit.core.BitObjectPool', {
     },
 
     collect: function () {
-        this._pools = {};
+        this._pools = Object.create(null);
     },
 
     isPoolableObject: function (object) {
-        return BitObject.isPrototypeOf(object) && object.hasInterface(bit.core.BitObjectPool.IBitObjectPoolPoolable);
+        return BitObject.isPrototypeOf(object) && object.hasInterfaceOf(bit.core.IBitPoolable);
     }
 });
 
 BitInterface.extend('bit.core.IBitPoolable', {
-    release: {
-        type: 'function'
-    }
+    release: 'function'
 });

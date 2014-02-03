@@ -12,13 +12,8 @@ goog.require('bit.core.BitObject');
 goog.require('bit.core.BitInterface');
 
 BitInterface.extend('bit.core.IBitDimensions', {
-    width: {
-        type: 'number'
-    },
-
-    height: {
-        type: 'number'
-    }
+    width: 'number',
+    height: 'number'
 });
 
 BitObject.extend('bit.core.MBitDimensions', {
@@ -33,6 +28,16 @@ BitObject.extend('bit.core.BitDimensions', {
     }
 }).mixin([
     MBitDimensions
-]).withInterfaces([
+]).fullfills([
     IBitDimensions
 ]);
+
+/*
+]).test({
+    'widthFunctionsLikeExpected': function () {
+        var dim = BitDimensions.create(10, 0);
+        bit_assert(dim.width === 10);
+        bit_assert(dim.height === 0);
+    }
+});
+    */

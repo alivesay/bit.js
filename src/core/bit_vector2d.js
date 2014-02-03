@@ -12,33 +12,15 @@ goog.require('bit.core.BitObject');
 goog.require('bit.core.BitInterface');
 
 BitInterface.extend('bit.core.IBitVector2D', {
-    x: {
-        type: 'number'
-    },
-    y: {
-        type: 'number'
-    },
-    cross: {
-        type: 'function'
-    },
-    dot: {
-        type: 'function'
-    },
-    length: {
-        type: 'function'
-    },
-    normalize: {
-        type: 'function'
-    },
-    invertX: {
-        type: 'function'
-    },
-    invertY: {
-        type: 'function'
-    },
-    invert: {
-        type: 'function'
-    }
+    x: 'number',
+    y: 'number',
+    cross: 'function',
+    dot: 'function',
+    length: 'function',
+    normalize: 'function',
+    invertX: 'function',
+    invertY: 'function',
+    invert: 'function'
 });
 
 BitObject.extend('bit.core.MBitVector2D', {
@@ -88,6 +70,6 @@ BitObject.extend('bit.core.BitVector2D', {
     }
 }).mixin([
     MBitVector2D
-]).withInterfaces([
+]).fullfills([
     IBitVector2D
 ]);

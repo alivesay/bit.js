@@ -35,6 +35,21 @@ bit.core.BitUtil = {
             buf32 = new Uint32Array(buf);
         buf32[0] = 0xDEADBEEF;
         return (buf8[0] === 0xEF);
+    },
+
+    objectShallowCopy: function (object) {
+        var newObject = Object.create(null),
+            prop;
+
+        for (prop in object) {
+            newObject[prop] = object[prop];
+        }
+
+        return newObject;
+    },
+
+    objectDeepCopy: function (object) {
+        return JSON.parse(JSON.stringify(object));
     }
 };
 

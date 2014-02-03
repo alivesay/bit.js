@@ -6,19 +6,19 @@
 
 goog.provide('bit.core.bit_namespace');
 
-var bit_global = this;
+var bit_global = window;
 
 var bit_namespace = function (parent, namespace) {
-    var ids = namespace.split('.'),
-        newNamespace = ids.shift();
+    namespace.split('.').forEach(function (e, i, a) {
+        if (parent[e] === undefined) {
+            parent[e] = {};
+        }
+        parent = parent[e];
+    });
 
-    if (parent[newNamespace] === undefined) {
-        parent[newNamespace] = {};
-    }
-
-    return ids.length > 0 ? bit_namespace(parent[newNamespace], ids.join('.')) : null;
+    return parent;
 };
 
-bit_namespace(this, 'bit.core');
+bit_namespace(bit_global, 'bit.core');
 
 bit.core.bit_namespace = bit_namespace;

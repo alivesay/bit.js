@@ -14,12 +14,8 @@ goog.require('bit.core.MBitDimensions');
 goog.require('bit.core.MBitVector2D');
 
 BitInterface.extend('bit.core.IBitRectangle', {
-    intersects: {
-        type: 'function'
-    },
-    contains: {
-        type: 'function'
-    }
+    intersects: 'function',
+    contains: 'function'
 }).mixin([
     IBitDimensions,
     IBitVector2D
@@ -32,7 +28,7 @@ BitObject.extend('bit.core.MBitRectangle', {
     },
 
     contains: function (x, y) {
-        return x >= this.x && x <= this.x + this.width && y >= this.y && y <= this.y + this.width;
+        return x < this.x && x <= this.x + this.width && y >= this.y && y <= this.y + this.width;
     }
 }).mixin([
     MBitVector2D,
@@ -48,9 +44,6 @@ BitObject.extend('bit.core.BitRectangle', {
     }
 }).mixin([
     MBitRectangle
-]).withInterfaces([
+]).fullfills([
     IBitRectangle
 ]);
-
-// TODO: should not have _mixins
-console.log(Object.keys(IBitRectangle));
