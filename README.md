@@ -12,3 +12,27 @@ A fun winter project where I make yet another attempt at a game engine and get d
 * interfaces
 * introspection
 * object pooling
+
+
+```javascript
+BitInterface.extend('bit.core.IBitDimensions', {
+    width: 'number',
+    height: 'number'
+});
+
+BitObject.extend('bit.core.MBitDimensions', {
+    width: 0,
+    height: 0
+});
+
+BitObject.extend('bit.core.BitDimensions', {
+    _construct: function (width, height) {
+        this.width = width || this.width;
+        this.height = height || this.height;
+    }
+}).mixin([
+    MBitDimensions
+]).fullfills([
+    IBitDimensions
+]);
+```
