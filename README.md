@@ -35,4 +35,39 @@ BitObject.extend('bit.core.BitDimensions', {
 ]).fullfills([
     IBitDimensions
 ]);
+
+BitInterface.extend('bit.core.IBitRectangle', {
+    intersects: 'function',
+    contains: 'function'
+}).mixin([
+    IBitDimensions,
+    IBitVector2D
+]);
+
+BitObject.extend('bit.core.MBitRectangle', {
+    intersects: function (rect) {
+        return !(this.x > rect.x + rect.width || this.x + this.width < rect.x ||
+                 this.y > rect.y + rect.height || this.y + this.height < rect.y);
+    },
+
+    contains: function (x, y) {
+        return x < this.x && x <= this.x + this.width && y >= this.y && y <= this.y + this.width;
+    }
+}).mixin([
+    MBitVector2D,
+    MBitDimensions
+]);
+
+BitObject.extend('bit.core.BitRectangle', {
+    _construct: function (x, y, width, height) {
+        this.x = x || this.x;
+        this.y = y || this.y;
+        this.width = width || this.width;
+        this.height = height || this.height;
+    }
+}).mixin([
+    MBitRectangle
+]).fullfills([
+    IBitRectangle
+]);
 ```
